@@ -427,11 +427,15 @@ if (typeof process) {
       }
     }
     (async () => {
+
+      let mvlines = await readFile("/Users/pa27161/Downloads/archive/movie_lines.txt");
+      mvlines = mvlines.split("\n").map(line => line.split("+++$+++").pop()).join("\n");
+      await writeFile('../mvlines.txt', mvlines);
       //await writeFile('hobbit-down.txt',(await readFile('hobbit.txt')).toLowerCase());
       let texts = (
         await Promise.all([
-            getText(await readFile("classified/eng.html"))
-          //readFile("sil.txt"),
+            //getText(await readFile("classified/eng.html")),
+          readFile("../mvlines.txt")
          // readFile("fellowship.txt"),
           //  readFile("fellowship-lan.txt"),
           //  readFile("fellowship-fren.txt"),
