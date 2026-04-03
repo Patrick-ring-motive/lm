@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="nob">
+<head>
+  <meta charset="utf-8">
+  <title>Language: nob</title>
+  <style>
+    table { border-collapse: collapse; width: 100%; }
+    td    { border: 1px solid #ccc; padding: 6px 10px; }
+  </style>
+</head>
+<body>
+  <h1>nob — 2 cell(s)</h1>
+  <table>
+    <tr><td>&lt;s&gt;[INST] 用Rust写一个Web服务，服务接受请求后发送HTTP请求并返回 [/INST] 以下是使用Rust编写Web服务的示例代码：\n```rust\n// 引入必要的库\nextern crate hyper;\nextern crate futures;\n// 定义服务器\nuse hyper::{Body, Request, Response, Server};\nuse hyper::rt::{self, Future};\nuse hyper::service::service_fn_ok;\n// 定义处理函数\nfn hello(_req: Request&lt;Body&gt;) -&gt; Response&lt;Body&gt; {\n    // 发送HTTP请求\n    // ...\n    // 返回响应\n    Response::new(Body::from(&quot;Hello World!&quot;))\n}\n// 启动服务器\nfn main() {\n    let addr = ([127, 0, 0, 1], 3000).into();\n    let server = Server::bind(&amp;addr)\n        .serve(|| {\n            service_fn_ok(hello)\n        })\n        .map_err(|e| eprintln!(&quot;server error: {}&quot;, e));\n    println!(&quot;Listening on http://{}&quot;, addr);\n    rt::run(server);\n}\n``` &lt;/s&gt;\\n&lt;s&gt;[INST] 作为一个身在上海的人，现在应该买房么？ [/INST] 这个问题没有一个确定的答案，因为购房决策需要考虑多个因素，包括个人经济状况、长期规划、市场趋势等等。以下是一些可能会影响你购房决策的因素：\n\n个人经济状况：购房是一项巨大的投资，需要充分考虑个人经济状况。你需要评估自己的财务能力，以确保自己能够承担房贷和其他相关费用。\n\n长期规划：你需要考虑你的长期规划，包括你的职业发展、家庭状况、未来几年的生活计划等等。如果你计划在上海生活和工作很长一段时间，并且有稳定的收入来源，购房可能是一个不错的选择。\n\n市场趋势：你需要了解上海的房地产市场趋势，并根据市场情况做出决策。如果你认为市场价格较高，可能需要等待价格下跌后再进行购买。\n\n其他因素：还有其他一些因素，例如税收政策、房屋维护成本、房屋的位置和质量等等，也需要考虑到。 &lt;/s&gt;</td></tr>
+    <tr><td>&lt;s&gt;[INST] Напишите скрипт, генерирующий в окне два текстовых поля и рамку. Размер рамки можно менять с помощью вводимых значений в текстовые поля (определяют длину и ширину) и нажатии клавиши пробел на клавиатуре. [/INST] Пожалуйста, укажите язык программирования, на котором Вы бы хотели получить ответ. &lt;/s&gt;\\n&lt;s&gt;[INST] JavaScript [/INST] ```javascript\nvar styles = document.createElement(&quot;style&quot;);\ndocument.head.appendChild(styles); \nvar styleSheet = styles.sheet;\nstyleSheet.insertRule(`\n\tform {\n\t\tdisplay: inline-block;\n\t\tmargin: 1em;\n\t\tborder: 1px solid ButtonBorder;\n\t\tborder-radius: 6px;\n\t}\n`, 0);\nstyleSheet.insertRule(`\n\tinput {\n\t\tdisplay: block;\n\t\tmargin: 1em;\n\t\tfont-family: monospace;\n\t}\n`, 0);\n\nvar fragment = new DocumentFragment();\nvar form = document.createElement(&quot;form&quot;);\nfragment.append(form);\nvar input1 = document.createElement(&quot;input&quot;);\nvar input2 = document.createElement(&quot;input&quot;);\nvar defaultSize = input1.size;\n\nfor (let input of [input1, input2]) {\n\tinput.addEventListener(&quot;input&quot;, (event) =&gt; {\n\t\tif (input.value.length &gt; defaultSize) {\n\t\t\tinput.setAttribute(&quot;size&quot;, input.value.length);\n\t\t} else if (input.value.length !== defaultSize) {\n\t\t\tinput.setAttribute(&quot;size&quot;, defaultSize);\n\t\t}\n\t}, false);\n}\n\nform.append(input1, input2);\ndocument.body.append(fragment);\n``` &lt;/s&gt;</td></tr>
+  </table>
+</body>
+</html>

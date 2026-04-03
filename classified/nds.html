@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="nds">
+<head>
+  <meta charset="utf-8">
+  <title>Language: nds</title>
+  <style>
+    table { border-collapse: collapse; width: 100%; }
+    td    { border: 1px solid #ccc; padding: 6px 10px; }
+  </style>
+</head>
+<body>
+  <h1>nds — 5 cell(s)</h1>
+  <table>
+    <tr><td>&lt;s&gt;[INST] Напиши &quot;Hello, world!&quot; на языке программирования С++. [/INST] &quot;Hello World&quot; на языке C++ будет выглядеть следующим образом:\n\n#include &lt;iostream&gt;\n\nint main() {\n std::cout &lt;&lt; &quot;Hello World!&quot;;\n return 0;\n} &lt;/s&gt;</td></tr>
+    <tr><td>&lt;s&gt;[INST] 如何写一个最简单的 Python 程序。 [/INST] Python以其简洁的语法而闻名。例如，\n'''\nprint(&quot;hello world&quot;)\n'''\n就是一段python程序，它非常简洁。只由一个函数构成，却可以正常运行。 &lt;/s&gt;\\n&lt;s&gt;[INST] 谢谢你 [/INST] 不客气！ &lt;/s&gt;</td></tr>
+    <tr><td>&lt;s&gt;[INST] When was Einstein born? [/INST] Einstein was born in 14 March 1879 in a city named Ulm, German Empire &lt;/s&gt;</td></tr>
+    <tr><td>&lt;s&gt;[INST] 请用 Python 语言编写一段快速排序的代码？ [/INST] 这里是 Python 语言的快速排序示例代码：\n```python\ndef quick_sort(arr):\n if len(arr) &lt;= 1:\n return arr\n else:\n pivot = arr[0]\n left = [x for x in arr[1:] if x &lt;= pivot]\n right = [x for x in arr[1:] if x &gt; pivot]\n return quick_sort(left) + [pivot] + quick_sort(right)\n```\n以上的 quick_sort 函数接收一个数组 arr，它首先检查该数组是否为空或只包含一个元素。如果是这种情况，那么它可以立即返回 arr。否则，它将选择一个主元素（本例中选取的是第一个元素），然后将数组划分为两个子数组：一个包含小于或等于主元素的元素，另一个包含大于主元素的元素。这两个子数组再递归地排序，然后与主元素组合在一起，形成排序后的数组。 &lt;/s&gt;</td></tr>
+    <tr><td>&lt;s&gt;[INST] 2+40= [/INST] 2+40=42 &lt;/s&gt;\\n&lt;s&gt;[INST] 50-8= [/INST] 50-8=42 &lt;/s&gt;</td></tr>
+  </table>
+</body>
+</html>
