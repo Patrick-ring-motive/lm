@@ -838,8 +838,8 @@
         state.context = readJson(STORAGE_KEYS.context, []);
 
         const settings = readJson(STORAGE_KEYS.settings, {
-          maxTokens: 72,
-          maxSentences: 4,
+          maxTokens: 500,
+          maxSentences: 10,
         });
 
         seedInput.value = localStorage.getItem(STORAGE_KEYS.seed) ?? "";
