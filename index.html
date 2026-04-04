@@ -909,7 +909,7 @@
           state.trimodelKeys = Object.keys(trimodel);
           const tki = {};
           for(const key of state.trimodelKeys){
-            tkey = String(key.replace(/\s/g,'');
+            const tkey = String(key).replace(/\s/g,'');
             for(const char of tkey){
               tki[char] ??= new Set();
               tki[char].add(key);
