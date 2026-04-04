@@ -674,13 +674,13 @@
         let bestKey = "";
         let bestScore = 0;
         const recent = state.context.slice(-80).join(" ");
-        const keys = new Set();
+        /*const keys = new Set();
         for(const char of source){
           for(const key of state.trimodelKeysIndex?.[char]||[]){
             keys.add(key);
           }
-        }
-        for (const key of keys) {
+        }*/
+        for (const key of state.trimodelKeys/*keys*/) {
           const overlap = weightedLcs(key, source);
           const repeatPenalty = 1 + recent.split(key).length - 1;
           const score = overlap / repeatPenalty;
@@ -907,7 +907,7 @@
           state.trimodel = trimodel;
           state.bimodel = bimodel;
           state.trimodelKeys = Object.keys(trimodel);
-          const tki = {};
+          /*const tki = {};
           for(const key of state.trimodelKeys){
             const tkey = String(key).replace(/\s/g,'');
             for(const char of tkey){
@@ -915,7 +915,7 @@
               tki[char].add(key);
             }
           }
-          state.trimodelKeysIndex = tki;
+          state.trimodelKeysIndex = tki;*/
           state.ready = true;
           setStatus("Ready", "ready");
           refreshMeta();
