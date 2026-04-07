@@ -1,0 +1,294 @@
+const workerState = {
+  trimodel: null,
+  bimodel: null,
+  trimodelKeys: [],
+};
+
+const activeStreams = new Map();
+
+function safeNormalizeToken(token) {
+  try {
+    return JSON.parse(token);
+  } catch {
+    return String(token ?? "");
+  }
+}
+
+function displayToken(token) {
+  return String(safeNormalizeToken(token)).replaceAll("_", " ").trim();
+}
+
+function appendTokenToText(text, token) {
+  const value = displayToken(token);
+  if (!value) {
+    return text;
+  }
+
+  if (!text) {
+    return value.charAt(0).toUpperCase() + value.slice(1);
+  }
+
+  if (/^[,.;:!?%\]]/.test(value) || /^['’]/.test(value)) {
+    return `${text.trimEnd()}${value}`;
+  }
+
+  return `${text} ${value}`;
+}
+
+function tokensToText(tokens) {
+  return tokens.reduce((text, token) => appendTokenToText(text, token), "");
+}
+
+function countSentences(text) {
+  return String(text)
+    .split(/[.!?]+/)
+    .map((chunk) => chunk.trim())
+    .filter(Boolean).length;
+}
+
+function lcs(left, right) {
+  const a = [...String(left ?? "")];
+  const b = [...String(right ?? "")];
+  if (!a.length || !b.length) {
+    return 0;
+  }
+
+  const table = Array.from({ length: a.length + 1 }, () =>
+    new Array(b.length + 1).fill(0),
+  );
+
+  for (let row = 1; row <= a.length; row++) {
+    for (let column = 1; column <= b.length; column++) {
+      table[row][column] =
+        a[row - 1] === b[column - 1]
+          ? table[row - 1][column - 1] + 1
+          : Math.max(table[row - 1][column], table[row][column - 1]);
+    }
+  }
+
+  return table[a.length][b.length];
+}
+
+function weightedLcs(left, right) {
+  const a = String(left ?? "");
+  const b = String(right ?? "");
+  if (!a.length || !b.length) {
+    return 0;
+  }
+  return (lcs(a, b) * Math.min(a.length, b.length)) / Math.max(a.length, b.length);
+}
+
+function followCount(model, key) {
+  return model[key] ? Object.keys(model[key]).length : 0;
+}
+
+function contextBoost(tokens, key) {
+  const recent = tokens.slice(-20).join(" ");
+  if (!recent) {
+    return 0;
+  }
+  return weightedLcs(recent, key) / Math.max(1, key.length);
+}
+
+function findClosestKey(source, context) {
+  let bestKey = "";
+  let bestScore = 0;
+  const recent = context.slice(-80).join(" ");
+
+  for (const key of workerState.trimodelKeys) {
+    const overlap = weightedLcs(key, source);
+    const repeatPenalty = 1 + recent.split(key).length - 1;
+    const score = overlap / repeatPenalty;
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestKey = key;
+    }
+  }
+
+  return bestKey;
+}
+
+function selectCandidate(matches, model, context) {
+  let bestKey = "";
+  let bestScore = -Infinity;
+  const recent = context.slice(-80).join(" ");
+
+  for (const [key, weight] of Object.entries(matches ?? {})) {
+    const repeatPenalty = 1 + recent.split(key).length - 1;
+    const score =
+      ((Number(weight) || 0) +
+        followCount(model, key) * 0.015 +
+        contextBoost(context, key) * 2) /
+      repeatPenalty;
+
+    if (score > bestScore || (score === bestScore && Math.random() < 0.15)) {
+      bestScore = score;
+      bestKey = key;
+    }
+  }
+
+  return bestKey;
+}
+
+function randomSeedTokens() {
+  const key =
+    workerState.trimodelKeys[
+      Math.floor(Math.random() * Math.max(1, workerState.trimodelKeys.length))
+    ] || "";
+
+  return key.split(" ").filter(Boolean);
+}
+
+function getNextToken(context) {
+  if (!context.length) {
+    context.push(...randomSeedTokens());
+  }
+
+  const previous = context[context.length - 2] ?? "";
+  const current = context[context.length - 1] ?? "";
+  const trigramKey = `${previous} ${current}`.trim();
+
+  let model = workerState.trimodel;
+  let matches = model[trigramKey];
+
+  if (!matches) {
+    model = workerState.bimodel;
+    matches = model[current];
+  }
+
+  if (!matches) {
+    model = workerState.trimodel;
+    const fuzzyKey = findClosestKey(trigramKey || current, context);
+    matches = model[fuzzyKey];
+  }
+
+  return selectCandidate(matches, model, context);
+}
+
+async function fetchModelJson(path) {
+  const response = await fetch(path);
+  if (!response.ok) {
+    throw new Error(`Unable to load ${path}: ${response.status}`);
+  }
+
+  if (path.endsWith(".gz")) {
+    if (!response.body || typeof DecompressionStream !== "function") {
+      throw new Error("Gzip decompression is not available in this browser.");
+    }
+    const stream = response.body.pipeThrough(new DecompressionStream("gzip"));
+    return JSON.parse(await new Response(stream).text());
+  }
+
+  return JSON.parse(await response.text());
+}
+
+async function loadModel(stem) {
+  try {
+    return await fetchModelJson(`${stem}.gz`);
+  } catch {
+    return await fetchModelJson(stem);
+  }
+}
+
+async function initializeModels() {
+  const [trimodel, bimodel] = await Promise.all([
+    loadModel("trimodel.json.txt"),
+    loadModel("bimodel.json.txt"),
+  ]);
+
+  workerState.trimodel = trimodel;
+  workerState.bimodel = bimodel;
+  workerState.trimodelKeys = Object.keys(trimodel);
+}
+
+const initPromise = initializeModels();
+
+(async () => {
+  try {
+    await initPromise;
+    postMessage({ type: "ready" });
+  } catch (error) {
+    postMessage({
+      type: "ready-error",
+      error: error?.message ?? String(error),
+    });
+  }
+})();
+
+async function streamGeneration({ streamId, context = [], maxTokens = 72, maxSentences = 4 }) {
+  const localContext = Array.isArray(context) ? [...context] : [];
+  const generated = [];
+  const tokenLimit = Math.max(8, Number(maxTokens) || 72);
+  const sentenceLimit = Math.max(1, Number(maxSentences) || 4);
+
+  for (let index = 0; index < tokenLimit; index++) {
+    const controller = activeStreams.get(streamId);
+    if (!controller || controller.signal.aborted) {
+      return;
+    }
+
+    const token = getNextToken(localContext);
+    if (!token) {
+      break;
+    }
+
+    localContext.push(token);
+    generated.push(token);
+
+    postMessage({
+      type: "stream-chunk",
+      streamId,
+      chunk: token,
+    });
+
+    const partialText = tokensToText(generated).trim();
+    if (countSentences(partialText) >= sentenceLimit && /[.!?]$/.test(displayToken(token))) {
+      break;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+
+  postMessage({ type: "stream-end", streamId });
+}
+
+onmessage = async (event) => {
+  const data = event.data;
+  if (!data || typeof data !== "object") {
+    return;
+  }
+
+  const { type, streamId } = data;
+
+  if (type === "stream-cancel") {
+    const controller = activeStreams.get(streamId);
+    if (controller) {
+      controller.abort();
+      activeStreams.delete(streamId);
+    }
+    return;
+  }
+
+  if (type !== "stream-start") {
+    return;
+  }
+
+  const controller = new AbortController();
+  activeStreams.set(streamId, controller);
+
+  try {
+    await initPromise;
+    await streamGeneration(data);
+  } catch (error) {
+    if (!controller.signal.aborted) {
+      postMessage({
+        type: "stream-error",
+        streamId,
+        error: error?.message ?? String(error),
+      });
+    }
+  } finally {
+    activeStreams.delete(streamId);
+  }
+};
