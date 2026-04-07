@@ -39,6 +39,23 @@ function tokensToText(tokens) {
   return tokens.reduce((text, token) => appendTokenToText(text, token), "");
 }
 
+function computeContentDelta(runningText, token) {
+  const value = displayToken(token);
+  if (!value) {
+    return "";
+  }
+
+  if (!runningText) {
+    return value.charAt(0).toUpperCase() + value.slice(1);
+  }
+
+  if (/^[,.;:!?%\]]/.test(value) || /^['\u2019]/.test(value)) {
+    return value;
+  }
+
+  return ` ${value}`;
+}
+
 function countSentences(text) {
   return String(text)
     .split(/[.!?]+/)
@@ -221,6 +238,26 @@ async function streamGeneration({ streamId, context = [], maxTokens = 72, maxSen
   const generated = [];
   const tokenLimit = Math.max(8, Number(maxTokens) || 72);
   const sentenceLimit = Math.max(1, Number(maxSentences) || 4);
+  const promptTokens = localContext.length;
+
+  const completionId = `chatcmpl-${crypto.randomUUID()}`;
+  const created = Math.floor(Date.now() / 1000);
+  const modelName = "lm-ngram";
+  let runningText = "";
+  let finishReason = "stop";
+
+  // Initial chunk: role announcement
+  postMessage({
+    type: "stream-chunk",
+    streamId,
+    chunk: {
+      id: completionId,
+      object: "chat.completion.chunk",
+      created,
+      model: modelName,
+      choices: [{ index: 0, delta: { role: "assistant", content: "" }, finish_reason: null }],
+    },
+  });
 
   for (let index = 0; index < tokenLimit; index++) {
     const controller = activeStreams.get(streamId);
@@ -236,10 +273,20 @@ async function streamGeneration({ streamId, context = [], maxTokens = 72, maxSen
     localContext.push(token);
     generated.push(token);
 
+    const contentDelta = computeContentDelta(runningText, token);
+    runningText += contentDelta;
+
     postMessage({
       type: "stream-chunk",
       streamId,
-      chunk: token,
+      chunk: {
+        id: completionId,
+        object: "chat.completion.chunk",
+        created,
+        model: modelName,
+        choices: [{ index: 0, delta: { content: contentDelta }, finish_reason: null }],
+        _token: token,
+      },
     });
 
     const partialText = tokensToText(generated).trim();
@@ -247,8 +294,30 @@ async function streamGeneration({ streamId, context = [], maxTokens = 72, maxSen
       break;
     }
 
+    if (index === tokenLimit - 1) {
+      finishReason = "length";
+    }
+
     await new Promise((resolve) => setTimeout(resolve, 0));
   }
+
+  // Final chunk: finish reason and usage
+  postMessage({
+    type: "stream-chunk",
+    streamId,
+    chunk: {
+      id: completionId,
+      object: "chat.completion.chunk",
+      created,
+      model: modelName,
+      choices: [{ index: 0, delta: {}, finish_reason: finishReason }],
+      usage: {
+        prompt_tokens: promptTokens,
+        completion_tokens: generated.length,
+        total_tokens: promptTokens + generated.length,
+      },
+    },
+  });
 
   postMessage({ type: "stream-end", streamId });
 }

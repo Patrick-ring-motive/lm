@@ -56,18 +56,6 @@ function readJson(key, fallback) {
   return safeJsonParse(localStorage.getItem(key), fallback) ?? fallback;
 }
 
-function normalizeToken(token) {
-  try {
-    return JSON.parse(token);
-  } catch {
-    return String(token ?? "");
-  }
-}
-
-function displayToken(token) {
-  return String(normalizeToken(token)).replaceAll("_", " ").trim();
-}
-
 function tokenize(text) {
   return String(text ?? "")
     .trim()
@@ -81,27 +69,6 @@ function trimContext(limit = 180) {
   if (state.context.length > limit) {
     state.context = state.context.slice(-limit);
   }
-}
-
-function appendTokenToText(text, token) {
-  const value = displayToken(token);
-  if (!value) {
-    return text;
-  }
-
-  if (!text) {
-    return value.charAt(0).toUpperCase() + value.slice(1);
-  }
-
-  if (/^[,.;:!?%\]]/.test(value) || /^['’]/.test(value)) {
-    return `${text.trimEnd()}${value}`;
-  }
-
-  return `${text} ${value}`;
-}
-
-function tokensToText(tokens) {
-  return tokens.reduce((text, token) => appendTokenToText(text, token), "");
 }
 
 function renderMessage(role, text) {
@@ -157,7 +124,7 @@ function renderHistory() {
 
 async function generateReply() {
   const assistantBody = renderMessage("assistant", "…");
-  const generated = [];
+  let fullText = "";
   const maxTokens = Math.max(8, Number(maxTokensInput.value) || 72);
   const maxSentences = Math.max(1, Number(maxSentencesInput.value) || 4);
 
@@ -177,21 +144,29 @@ async function generateReply() {
         break;
       }
 
-      const token = String(value ?? "");
-      state.context.push(token);
-      generated.push(token);
-      trimContext();
+      const choice = value?.choices?.[0];
+      if (!choice) {
+        continue;
+      }
 
-      const partial = tokensToText(generated).trim();
-      assistantBody.textContent = partial || "…";
-      chatLog.scrollTop = chatLog.scrollHeight;
+      if (value._token) {
+        state.context.push(value._token);
+        trimContext();
+      }
+
+      const content = choice.delta?.content;
+      if (content) {
+        fullText += content;
+        assistantBody.textContent = fullText || "…";
+        chatLog.scrollTop = chatLog.scrollHeight;
+      }
     }
   } finally {
     state.currentStreamReader = null;
     reader.releaseLock();
   }
 
-  const finalText = tokensToText(generated).trim() || "(No output generated.)";
+  const finalText = fullText.trim() || "(No output generated.)";
   assistantBody.textContent = finalText;
   state.history.push({ role: "assistant", text: finalText });
   persistState();
