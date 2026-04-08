@@ -79,9 +79,9 @@ function lcs(left, right) {
   const table = Array.from({ length: a.length + 1 }, () =>
     new Array(b.length + 1).fill(0),
   );
-  const a_length = a.length;
+  const a_length_1 = a.length + 1;
   const b_length_1 = b.length + 1;
-  for (let row = 1; row !== a_length; row++) {
+  for (let row = 1; row !== a_length_1; row++) {
     for (let column = 1; column !== b_length_1; column++) {
       table[row][column] =
         a[row - 1] === b[column - 1]
