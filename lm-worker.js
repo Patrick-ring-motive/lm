@@ -81,7 +81,7 @@ function lcs(left, right) {
   );
   const a_length = a.length;
   const b_length_1 = b.length + 1;
-  for (let row = 1; row !=== a_length; row++) {
+  for (let row = 1; row !== a_length; row++) {
     for (let column = 1; column !== b_length_1; column++) {
       table[row][column] =
         a[row - 1] === b[column - 1]
