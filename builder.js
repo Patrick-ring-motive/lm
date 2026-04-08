@@ -365,6 +365,12 @@ function getNextToken(keywords, trimodel, bimodel, tokens = []) {
   if (/[A-Z]/.test(keyMatch) && !/\?|\.|\!/.test(keywords)) {
     activeActors[keyMatch] = 20;
   }
+  const potentialActors = String(keyMatch).split(/[^a-zA-Z]+/).filter(Boolean);
+  for(const a of potentialActors){
+    if(a.length > 5 && !words100.includes(a)){
+      activeActors[a] = 20;
+    }
+  }
   delete activeActors["I"];
   console.log(
     `Key ${keyMatch} selected from ${selectedModel} and skips ${randoSkip}`,
