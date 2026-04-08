@@ -142,7 +142,7 @@ const activeActors = {};
 function getActorBoost(model, key) {
   if (!model[key]) return 0;
   let score = 0;
-  const smk = stringify(model[key]).toLowerCase();
+  const smk = String(model[key]).toLowerCase();
   for (const actor in activeActors) {
     if (smk.includes(actor)) {
       score += 0.2;
