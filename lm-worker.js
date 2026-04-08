@@ -157,6 +157,25 @@ function randomSeedTokens() {
   return key.split(" ").filter(Boolean);
 }
 
+const actors =
+  "Aragorn|Frodo|Gandalf|Legolas|Gimli|Boromir|Samwise|Merry|Pippin|Faramir|Denethor|Elrond|Galadriel|Saruman"
+  .toLowerCase()
+  .split("|");
+const activeActors = {};
+
+function getActorBoost(model, key) {
+  if (!model[key]) return 0;
+  let score = 0;
+  const smk = stringify(model[key]).toLowerCase();
+  for (const actor in activeActors) {
+    if (smk.includes(actor)) {
+      score += 0.2;
+    }
+    score += 0.2 * ((lcs(smk, actor) * actor.length) / smk.length);
+  }
+  return score;
+}
+
 function getNextToken(context) {
   if (!context.length) {
     context.push(...randomSeedTokens());
