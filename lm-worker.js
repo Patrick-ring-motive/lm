@@ -1,3 +1,9 @@
+let words100 = "years|ways|worlds|live|lives|hands|parts|children|eyes|places|weeks|cases|points|numbers|groups|problems|facts|times|days|men|women|one|two|three|four|five|six|seven|eight|nine|ten|zero|none|size|sized|sizes|sizing|calls|called|calling|leaves|lefts|leaving|try|tries|trying|feels|felt|feeling|seems|seemed|seeming|asks|asked|asking|tells|told|telling|finds|found|finding|looks|looked|looking|see|sees|seeing|saw|knows|knowing|knew|get|gets|got|getting|works|worked|working|I|a|able|about|after|all|also|am|an|and|any|are|as|ask|at|back|bad|be|because|been|being|bes|big|but|by|call|came|can|case|child|come|comes|coming|company|could|day|different|do|does|doing|done|early|even|eye|fact|feel|few|find|first|for|from|gave|get|give|gives|giving|go|goes|going|good|government|great|group|had|hand|has|have|he|her|high|him|his|how|if|important|in|into|is|it|its|just|know|large|last|leave|life|like|little|long|look|make|makes|making|man|me|most|my|new|next|no|not|now|number|of|old|on|one|only|or|other|our|out|over|own|part|people|person|place|point|problem|public|right|said|same|saw|say|says|see|seeing|seem|sees|shall|she|should|small|so|some|take|takes|taking|tell|than|that|the|their|them|then|there|these|they|thing|think|thinking|thinks|this|thought|time|to|took|try|two|up|us|use|used|uses|using|want|wanted|wanting|wants|was|way|we|week|well|went|were|what|when|which|who|will|with|woman|work|world|would|year|yes|yet|you|young|your";
+words100 = words100
+  .split("|")
+  .filter((x) => x.length <= 5)
+  .join("|");
+
 const workerState = {
   trimodel: null,
   bimodel: null,
@@ -73,9 +79,10 @@ function lcs(left, right) {
   const table = Array.from({ length: a.length + 1 }, () =>
     new Array(b.length + 1).fill(0),
   );
-
-  for (let row = 1; row <= a.length; row++) {
-    for (let column = 1; column <= b.length; column++) {
+  const a_length = a.length;
+  const b_length_1 = b.length + 1;
+  for (let row = 1; row !=== a_length; row++) {
+    for (let column = 1; column !== b_length_1; column++) {
       table[row][column] =
         a[row - 1] === b[column - 1]
           ? table[row - 1][column - 1] + 1
@@ -126,37 +133,6 @@ function findClosestKey(source, context) {
   return bestKey;
 }
 
-function selectCandidate(matches, model, context) {
-  let bestKey = "";
-  let bestScore = -Infinity;
-  const recent = context.slice(-80).join(" ");
-
-  for (const [key, weight] of Object.entries(matches ?? {})) {
-    const repeatPenalty = 1 + recent.split(key).length - 1;
-    const score =
-      ((Number(weight) || 0) +
-        followCount(model, key) * 0.015 +
-        contextBoost(context, key) * 2) /
-      repeatPenalty;
-
-    if (score > bestScore || (score === bestScore && Math.random() < 0.15)) {
-      bestScore = score;
-      bestKey = key;
-    }
-  }
-
-  return bestKey;
-}
-
-function randomSeedTokens() {
-  const key =
-    workerState.trimodelKeys[
-      Math.floor(Math.random() * Math.max(1, workerState.trimodelKeys.length))
-    ] || "";
-
-  return key.split(" ").filter(Boolean);
-}
-
 const actors =
   "Aragorn|Frodo|Gandalf|Legolas|Gimli|Boromir|Samwise|Merry|Pippin|Faramir|Denethor|Elrond|Galadriel|Saruman"
   .toLowerCase()
@@ -175,6 +151,68 @@ function getActorBoost(model, key) {
   }
   return score;
 }
+
+function selectCandidate(matches, model, context, trigramKey='') {
+  let bestKey = "";
+  let bestScore = -Infinity;
+  const recent = context.slice(-80).join(" ");
+
+  for (const [key, weight] of Object.entries(matches ?? {})) {
+    const repeatPenalty = 1 + recent.split(key).length - 1;
+    const score =
+      ((Number(weight) || 0) +
+        getActorBoost(model, key) +
+        followCount(model, key) * 0.015 +
+        contextBoost(context, key) * 2) /
+      repeatPenalty;
+
+    if (score > bestScore || (score === bestScore && Math.random() < 0.15)) {
+      bestScore = score;
+      bestKey = key;
+    }
+  }
+  let lk;
+  let keyMatch;
+  try{
+   keyMatch = String(bestKey);
+   lk = keyMatch.toLowerCase();
+  }catch(e){
+    console.warn(e);
+  }
+  for (const actor of actors) {
+    if (lk.includes(actor)) {
+      activeActors[actor] = 20;
+    }
+  }
+  for (const actor in activeActors) {
+    activeActors[actor]--;
+    if (activeActors[actor] <= 0) {
+      delete activeActors[actor];
+    }
+  }
+  if (/[A-Z]/.test(keyMatch) && !/\?|\.|\!/.test(trigramKey)) {
+    activeActors[keyMatch] = 20;
+  }
+  const potentialActors = String(keyMatch).split(/[^a-zA-Z]+/).filter(Boolean);
+  for(const a of potentialActors){
+    if(a.length > 5 && !words100.includes(a)){
+      activeActors[a] = 20;
+    }
+  }
+  delete activeActors["I"];
+  return bestKey;
+}
+
+function randomSeedTokens() {
+  const key =
+    workerState.trimodelKeys[
+      Math.floor(Math.random() * Math.max(1, workerState.trimodelKeys.length))
+    ] || "";
+
+  return key.split(" ").filter(Boolean);
+}
+
+
 
 function getNextToken(context) {
   if (!context.length) {
@@ -199,7 +237,7 @@ function getNextToken(context) {
     matches = model[fuzzyKey];
   }
 
-  return selectCandidate(matches, model, context);
+  return selectCandidate(matches, model, context, trigramKey);
 }
 
 async function fetchModelJson(path) {
