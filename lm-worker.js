@@ -115,6 +115,7 @@ function contextBoost(tokens, key) {
 }
 
 function findClosestKey(source, context) {
+  source = String(source);
   let bestKey = "";
   let bestScore = 0;
   const recent = context.slice(-80).join(" ");
@@ -127,6 +128,9 @@ function findClosestKey(source, context) {
     if (score > bestScore) {
       bestScore = score;
       bestKey = key;
+      if(overlap >= Math.floor(Math.max(key.length,source.length))){
+        break;
+      }
     }
   }
 
