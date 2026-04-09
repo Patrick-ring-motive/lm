@@ -128,7 +128,7 @@ function findClosestKey(source, context) {
     if (score > bestScore) {
       bestScore = score;
       bestKey = key;
-      if(overlap >= Math.floor(Math.max(key.length,source.length))){
+      if(overlap >= Math.floor(0.8*Math.max(key.length,source.length))){
         break;
       }
     }
