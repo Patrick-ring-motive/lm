@@ -80,7 +80,7 @@ function lcs(seq1, seq2) {
           const arr2 = seq2;
           const dp = Array(arr1.length + 1)
             .fill(0)
-            .map(() => Array(arr2.length + 1).fill(0));
+            .map(() => new Uint8Array(arr2.length + 1));
           const dp_length = dp.length;
           for (let i = 1; i !== dp_length; i++) {
             const dpi_length = dp[i].length;
