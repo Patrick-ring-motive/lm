@@ -69,30 +69,31 @@ function countSentences(text) {
     .filter(Boolean).length;
 }
 
-function lcs(left, right) {
-  const a = [...String(left ?? "")];
-  const b = [...String(right ?? "")];
-  if (!a.length || !b.length) {
-    return 0;
-  }
-
-  const table = Array.from({ length: a.length + 1 }, () =>
-    new Array(b.length + 1).fill(0),
-  );
-  const a_length_1 = a.length + 1;
-  const b_length_1 = b.length + 1;
-  for (let row = 1; row !== a_length_1; row++) {
-    for (let column = 1; column !== b_length_1; column++) {
-      table[row][column] =
-        a[row - 1] === b[column - 1]
-          ? table[row - 1][column - 1] + 1
-          : Math.max(table[row - 1][column], table[row][column - 1]);
-    }
-  }
-
-  return table[a.length][b.length];
-}
-
+function lcs(seq1, seq2) {
+          "use strict";
+          seq1 = [...(seq1 ?? [])];
+          seq2 = [...(seq2 ?? [])];
+          if (seq2.length > seq1.length) {
+            [seq1, seq2] = [seq2, seq1];
+          }
+          const arr1 = seq1;
+          const arr2 = seq2;
+          const dp = Array(arr1.length + 1)
+            .fill(0)
+            .map(() => Array(arr2.length + 1).fill(0));
+          const dp_length = dp.length;
+          for (let i = 1; i !== dp_length; i++) {
+            const dpi_length = dp[i].length;
+            for (let x = 1; x !== dpi_length; x++) {
+              if (arr1[i - 1] === arr2[x - 1]) {
+                dp[i][x] = dp[i - 1][x - 1] + 1;
+              } else {
+                dp[i][x] = Math.max(dp[i][x - 1], dp[i - 1][x]);
+              }
+            }
+          }
+          return dp[arr1.length][arr2.length];
+        };
 function weightedLcs(left, right) {
   const a = String(left ?? "");
   const b = String(right ?? "");
