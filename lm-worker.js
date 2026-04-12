@@ -122,6 +122,7 @@ function findClosestKey(source, context) {
   const recent = context.slice(-80).join(" ");
 
   for (const key of workerState.trimodelKeys) {
+    const start = new Date().getTime();
     const overlap = weightedLcs(key, source);
     const repeatPenalty = 1 + recent.split(key).length - 1;
     const score = overlap / repeatPenalty;
@@ -130,6 +131,9 @@ function findClosestKey(source, context) {
       bestScore = score;
       bestKey = key;
       if(overlap >= Math.floor(0.8*Math.max(key.length,source.length))){
+        break;
+      }
+      if((new Date().getTime() - start) > 1000){
         break;
       }
     }
