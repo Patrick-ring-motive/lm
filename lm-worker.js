@@ -68,7 +68,7 @@ function countSentences(text) {
     .map((chunk) => chunk.trim())
     .filter(Boolean).length;
 }
-
+const lcsMemo = {};
 function lcs(seq1, seq2) {
           "use strict";
           seq1 = [...(seq1 ?? [])];
@@ -78,6 +78,10 @@ function lcs(seq1, seq2) {
           }
           const arr1 = seq1;
           const arr2 = seq2;
+          const lcsKey = String(arr1) + String(arr2);
+          if(lcsKey in lcsMemo){
+            return lcsMemo[lcsKey];
+          }
           const dp = Array(arr1.length + 1)
             .fill(0)
             .map(() => new Uint8Array(arr2.length + 1));
@@ -92,7 +96,9 @@ function lcs(seq1, seq2) {
               }
             }
           }
-          return dp[arr1.length][arr2.length];
+          const lcsValue = dp[arr1.length][arr2.length];
+          lcsMemo[lcsKey] = lcsValue;
+          return lcsValue;
         };
 function weightedLcs(left, right) {
   const a = String(left ?? "");
