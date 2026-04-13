@@ -78,10 +78,10 @@ function lcs(seq1, seq2) {
           }
           const arr1 = seq1;
           const arr2 = seq2;
-          const lcsKey = String(arr1) + String(arr2);
+          /*const lcsKey = String(arr1) + String(arr2);
           if(lcsKey in lcsMemo){
             return lcsMemo[lcsKey];
-          }
+          }*/
           const dp = Array(arr1.length + 1)
             .fill(0)
             .map(() => new Uint8Array(arr2.length + 1));
@@ -97,7 +97,7 @@ function lcs(seq1, seq2) {
             }
           }
           const lcsValue = dp[arr1.length][arr2.length];
-          lcsMemo[lcsKey] = lcsValue;
+         // lcsMemo[lcsKey] = lcsValue;
           return lcsValue;
         };
 function weightedLcs(left, right) {
@@ -129,19 +129,20 @@ function findClosestKey(source, context) {
 
   for (const key of workerState.trimodelKeys) {
     const start = new Date().getTime();
-    const overlap = weightedLcs(key, source);
+    const sub = lcs(key,source);
+    const overlap = sub * Math.min(key.length, source.length) / Math.max(key.length, source.length);
     const repeatPenalty = 1 + recent.split(key).length - 1;
     const score = overlap / repeatPenalty;
 
     if (score > bestScore) {
       bestScore = score;
       bestKey = key;
-      if(overlap >= Math.floor(0.8*Math.max(key.length,source.length))){
+      if(sub >= Math.floor(0.8*Math.max(key.length,source.length))){
         break;
       }
-      if((new Date().getTime() - start) > 1000){
+     /* if((new Date().getTime() - start) > 1000){
         break;
-      }
+      }*/
     }
   }
 
