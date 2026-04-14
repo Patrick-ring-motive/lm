@@ -26,6 +26,18 @@ const glueCommonPairs = (text) => {
   return next;
 };
 
+const glueCommonReverse = (text) => {
+  text = [...text].reverse().join("");
+  const re = RegExp(`\\b(${[...words100].reverse().join("")})\\s+(${[...words100].reverse().join("")})\\b`, "g");
+  let next = text,
+    prev;
+  do {
+    prev = next;
+    next = prev.replace(re, " $1_$2 ");
+  } while (next !== prev);
+  return [...next].reverse().join("");
+};
+
 const glueShortPairs = (text) => {
   const re = /\b([a-z]{1,3})\s+([a-z]{1,3})\b/g;
   let next = text,
@@ -62,6 +74,12 @@ const glueReverse = (text) => {
 };
 
 
+const glueShortReverse = (text) => {
+  text = [...text].reverse().join("");
+  next = glueShortPairs(text);
+  return [...next].reverse().join("");
+};
+
 
 const fixText = (text) => {
   return text
@@ -86,8 +104,10 @@ function buildNGrams(text, n = 3) {
   const model = {};
   text = fixText(text);
   let tokens = norm(
-      `${gluePairs(text)} ${glueReverse(text)} ${text} ${gluePairs(glueFixes(fixText(text)))} ${glueReverse(glueFixes(fixText(text)))}`,
-    )
+      `${gluePairs(text)} ${glueReverse(text)} ${text} ${gluePairs(glueFixes(fixText(text)))} ${glueReverse(glueFixes(fixText(text)))} `,
++    `${glueShortPairs(text)} ${glueShortReverse(text)} ${text} ${glueShortPairs(glueFixes(fixText(text)))} ${glueShortReverse(glueFixes(fixText(text)))} `,
++`${glueCommonPairs(text)} ${glueCommonReverse(text)} ${text} ${glueCommonPairs(glueFixes(fixText(text)))} ${glueCommonReverse(glueFixes(fixText(text)))}`,
+)
     .split(/\s+/)
     .filter((x) => x?.trim?.());
   for (let i = 0; i < tokens.length - n + 1; i++) {
@@ -436,7 +456,7 @@ if (typeof process) {
 
       let mvlines = await readFile("/Users/pa27161/Downloads/archive/movie_lines.txt");
       mvlines = mvlines.split("\n").map(line => (line.split("+++$+++").pop())).join("\n");
-      await writeFile('../mvlines.txt', textToText(mvlines));
+      await writeFile('../mvlines.txt', textToText(mvlines).replace(/\s+([\?\.\!,;:])/g, '$1'));
       //await writeFile('hobbit-down.txt',(await readFile('hobbit.txt')).toLowerCase());
       let texts = (
         await Promise.all([
@@ -503,8 +523,8 @@ if (typeof process) {
         .replaceAll('¬', ''));
 
       let texts2 = texts.map(text => text.replaceAll('-', ' ').replaceAll('—', ' '));
-
-      let allTexts = texts.concat(texts2);
+      let texts3 = texts.map(text => text.replaceAll('-', '').replaceAll('—', ''));
+      let allTexts = texts.concat(texts2).concat(texts3);
 
       let allTrimodels = allTexts.map(text => buildNGrams(text)).concat(allTexts.map(text => buildPrunedNGrams(text)));
 
