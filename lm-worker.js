@@ -238,7 +238,7 @@ function selectCandidate(matches, model, context, trigramKey='',fuzzyKey) {
   }
   delete activeActors["I"];
   if(fuzzyKey){
-    bestKey = `${fuzzyKey} ${bestKey}`;
+    bestKey = `<${fuzzyKey}> ${bestKey}`;
   }
   return bestKey;
 }
