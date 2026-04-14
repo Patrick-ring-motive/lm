@@ -89,7 +89,7 @@ function lcs(seq1, seq2,threshold) {
   const arr2_length = arr2.length;
     // Pre-DP rejection: the LCS can never exceed the shorter sequence's length
   if (threshold > 0 && arr2_length < threshold) {
-    return arr2_length; // upper-bound < threshold → can't match; return best-case
+    return seq1.includes(seq2) ? arr2_length : 0; // upper-bound < threshold → can't match; return best-case
   }
 
           const dp = Array(arr1.length + 1)
