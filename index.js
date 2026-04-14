@@ -321,7 +321,7 @@ async function init() {
     await initWorker();
     refreshMeta();
   } catch (error) {
-    setStatus("Failed to load models", "error");
+    setStatus("Failed to load models "+`Error: ${error?.message ?? String(error)}`, "error");
     renderMessage("system", `Error: ${error?.message ?? String(error)}`);
   }
 }
