@@ -171,7 +171,7 @@ function getActorBoost(model, key) {
   return score;
 }
 
-function selectCandidate(matches, model, context, trigramKey='') {
+function selectCandidate(matches, model, context, trigramKey='',fuzzyKey) {
   let bestKey = "";
   let bestScore = -Infinity;
   const recent = context.slice(-80).join(" ");
@@ -219,6 +219,9 @@ function selectCandidate(matches, model, context, trigramKey='') {
     }
   }
   delete activeActors["I"];
+  if(fuzzyKey){
+    bestKey = `${fuzzyKey} ${bestKey}`;
+  }
   return bestKey;
 }
 
@@ -249,14 +252,14 @@ function getNextToken(context) {
     model = workerState.bimodel;
     matches = model[current];
   }
-
+  let fuzzyKey;
   if (!matches) {
     model = workerState.trimodel;
-    const fuzzyKey = findClosestKey(trigramKey || current, context);
+    fuzzyKey = findClosestKey(trigramKey || current, context);
     matches = model[fuzzyKey];
   }
 
-  return selectCandidate(matches, model, context, trigramKey);
+  return selectCandidate(matches, model, context, trigramKey, fuzzyKey);
 }
 
 async function fetchModelJson(path) {
