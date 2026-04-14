@@ -75,7 +75,7 @@ function countSentences(text) {
     .filter(Boolean).length;
 }
 const lcsMemo = {};
-function lcs(seq1, seq2) {
+function lcs(seq1, seq2,threshold=0) {
           "use strict";
           seq1 = [...(seq1 ?? [])];
           seq2 = [...(seq2 ?? [])];
@@ -84,6 +84,13 @@ function lcs(seq1, seq2) {
           }
           const arr1 = seq1;
           const arr2 = seq2;
+  const arr1_length = arr1.length;
+  const arr2_length = arr2.length;
+    // Pre-DP rejection: the LCS can never exceed the shorter sequence's length
+  if (threshold > 0 && arr2_length < threshold) {
+    return arr2_length; // upper-bound < threshold → can't match; return best-case
+  }
+
           const dp = Array(arr1.length + 1)
             .fill(0)
             .map(() => new Uint8Array(arr2.length + 1));
@@ -97,6 +104,13 @@ function lcs(seq1, seq2) {
                 dp[i][x] = Math.max(dp[i][x - 1], dp[i - 1][x]);
               }
             }
+                // Early termination: best possible score from here can't reach the threshold
+    if (threshold > 0) {
+      const bestPossible = dp[i][arr2_length] + (arr1_length - i);
+      if (bestPossible < threshold) {
+        return dp[i][arr2_length]; // lower-bound; intentionally NOT cached
+      }
+    }
           }
           const lcsValue = dp[arr1.length][arr2.length];
           return lcsValue;
@@ -124,26 +138,29 @@ function contextBoost(tokens, key) {
 
 function findClosestKey(source, context) {
   source = String(source);
+  const source_length = source.length;
   let bestKey = "";
   let bestScore = 0;
   const recent = context.slice(-80).join(" ");
   const deadline = performance.now() + FIND_KEY_DEADLINE_MS;
-
-  for (let i = 0; i < workerState.trimodelKeys.length; i++) {
+  const workerState_trimodelKeys_length = workerState.trimodelKeys.length;
+  for (let i = 0; i !== workerState_trimodelKeys_length; i++) {
     if ((i & 63) === 0 && performance.now() > deadline) {
       break;
     }
 
     const key = workerState.trimodelKeys[i];
-    const sub = lcs(key, source);
-    const overlap = sub * Math.min(key.length, source.length) / Math.max(key.length, source.length);
+    const key_length = key.length;
+    const threshold = Math.floor(0.8*Math.max(key_length, source_length));
+    const sub = lcs(key, source, threshold);
+    const overlap = sub * Math.min(key_length, source_length) / Math.max(key_length, source_length);
     const repeatPenalty = 1 + recent.split(key).length - 1;
     const score = overlap / repeatPenalty;
 
     if (score > bestScore) {
       bestScore = score;
       bestKey = key;
-      if (sub >= Math.floor(0.8 * Math.max(key.length, source.length))) {
+      if (sub >= threshold) {
         break;
       }
     }
