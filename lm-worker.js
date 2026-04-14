@@ -146,9 +146,9 @@ function findClosestKey(source, context) {
   const deadline = performance.now() + FIND_KEY_DEADLINE_MS;
   const workerState_trimodelKeys_length = workerState.trimodelKeys.length;
   for (let i = 0; i !== workerState_trimodelKeys_length; i++) {
-    if ((i & 63) === 0 && performance.now() > deadline) {
+    /*if ((i & 63) === 0 && performance.now() > deadline) {
       break;
-    }
+    }*/
 
     const key = workerState.trimodelKeys[i];
     const key_length = key.length;
