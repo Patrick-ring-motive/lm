@@ -1,460 +1,492 @@
 let words100 = "years|ways|worlds|live|lives|hands|parts|children|eyes|places|weeks|cases|points|numbers|groups|problems|facts|times|days|men|women|one|two|three|four|five|six|seven|eight|nine|ten|zero|none|size|sized|sizes|sizing|calls|called|calling|leaves|lefts|leaving|try|tries|trying|feels|felt|feeling|seems|seemed|seeming|asks|asked|asking|tells|told|telling|finds|found|finding|looks|looked|looking|see|sees|seeing|saw|knows|knowing|knew|get|gets|got|getting|works|worked|working|I|a|able|about|after|all|also|am|an|and|any|are|as|ask|at|back|bad|be|because|been|being|bes|big|but|by|call|came|can|case|child|come|comes|coming|company|could|day|different|do|does|doing|done|early|even|eye|fact|feel|few|find|first|for|from|gave|get|give|gives|giving|go|goes|going|good|government|great|group|had|hand|has|have|he|her|high|him|his|how|if|important|in|into|is|it|its|just|know|large|last|leave|life|like|little|long|look|make|makes|making|man|me|most|my|new|next|no|not|now|number|of|old|on|one|only|or|other|our|out|over|own|part|people|person|place|point|problem|public|right|said|same|saw|say|says|see|seeing|seem|sees|shall|she|should|small|so|some|take|takes|taking|tell|than|that|the|their|them|then|there|these|they|thing|think|thinking|thinks|this|thought|time|to|took|try|two|up|us|use|used|uses|using|want|wanted|wanting|wants|was|way|we|week|well|went|were|what|when|which|who|will|with|woman|work|world|would|year|yes|yet|you|young|your";
 words100 = words100
-  .split("|")
-  .filter((x) => x.length <= 5)
-  .join("|");
+    .split("|")
+    .filter((x) => x.length <= 5)
+    .join("|");
 
 const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(
-  (typeof navigator !== "undefined" && navigator.userAgent) || ""
+    (typeof navigator !== "undefined" && navigator.userAgent) || ""
 );
 
 const FIND_KEY_DEADLINE_MS = isMobile ? 80 : 400;
 
 const workerState = {
-  trimodel: null,
-  bimodel: null,
-  trimodelKeys: [],
+    trimodel: null,
+    bimodel: null,
+    trimodelKeys: [],
 };
 
 const activeStreams = new Map();
 
 function safeNormalizeToken(token) {
-  try {
-    return JSON.parse(token);
-  } catch {
-    return String(token ?? "");
-  }
+    try {
+        return JSON.parse(token);
+    } catch {
+        return String(token ?? "");
+    }
 }
 
 function displayToken(token) {
-  return String(safeNormalizeToken(token)).replaceAll("_", " ").trim();
+    return String(safeNormalizeToken(token)).replaceAll("_", " ").trim();
 }
 
 function appendTokenToText(text, token) {
-  const value = displayToken(token);
-  if (!value) {
-    return text;
-  }
+    const value = displayToken(token);
+    if (!value) {
+        return text;
+    }
 
-  if (!text) {
-    return value.charAt(0).toUpperCase() + value.slice(1);
-  }
+    if (!text) {
+        return value.charAt(0).toUpperCase() + value.slice(1);
+    }
 
-  if (/^[,.;:!?%\]]/.test(value) || /^['']/.test(value)) {
-    return `${text.trimEnd()}${value}`;
-  }
+    if (/^[,.;:!?%\]]/.test(value) || /^['']/.test(value)) {
+        return `${text.trimEnd()}${value}`;
+    }
 
-  return `${text} ${value}`;
+    return `${text} ${value}`;
 }
 
 function tokensToText(tokens) {
-  return tokens.reduce((text, token) => appendTokenToText(text, token), "");
+    return tokens.reduce((text, token) => appendTokenToText(text, token), "");
 }
 
 function computeContentDelta(runningText, token) {
-  const value = displayToken(token);
-  if (!value) {
-    return "";
-  }
+    const value = displayToken(token);
+    if (!value) {
+        return "";
+    }
 
-  if (!runningText) {
-    return value.charAt(0).toUpperCase() + value.slice(1);
-  }
+    if (!runningText) {
+        return value.charAt(0).toUpperCase() + value.slice(1);
+    }
 
-  if (/^[,.;:!?%\]]/.test(value) || /^['\u2019]/.test(value)) {
-    return value;
-  }
+    if (/^[,.;:!?%\]]/.test(value) || /^['\u2019]/.test(value)) {
+        return value;
+    }
 
-  return ` ${value}`;
+    return ` ${value}`;
 }
 
 function countSentences(text) {
-  return String(text)
-    .split(/[.!?]+/)
-    .map((chunk) => chunk.trim())
-    .filter(Boolean).length;
+    return String(text)
+        .split(/[.!?]+/)
+        .map((chunk) => chunk.trim())
+        .filter(Boolean).length;
 }
 const lcsMemo = {};
-function lcs(seq1, seq2,threshold) {
-          "use strict";
-  threshold ??=0;
-          seq1 = [...(seq1 ?? [])];
-          seq2 = [...(seq2 ?? [])];
-          if (seq2.length > seq1.length) {
-            [seq1, seq2] = [seq2, seq1];
-          }
-          const arr1 = seq1;
-          const arr2 = seq2;
-  const arr1_length = arr1.length;
-  const arr2_length = arr2.length;
-    // Pre-DP rejection: the LCS can never exceed the shorter sequence's length
-  if (threshold > 0 && arr2_length < threshold) {
-    return seq1.includes(seq2) ? arr2_length : 0; // upper-bound < threshold → can't match; return best-case
-  }
 
-          const dp = Array(arr1.length + 1)
-            .fill(0)
-            .map(() => new Uint8Array(arr2.length + 1));
-          const dp_length = dp.length;
-          for (let i = 1; i !== dp_length; i++) {
-            const dpi_length = dp[i].length;
-            for (let x = 1; x !== dpi_length; x++) {
-              if (arr1[i - 1] === arr2[x - 1]) {
-                dp[i][x] = dp[i - 1][x - 1] + 1;
-              } else {
-                dp[i][x] = Math.max(dp[i][x - 1], dp[i - 1][x]);
-              }
-            }
-                // Early termination: best possible score from here can't reach the threshold
-    if (threshold > 0) {
-      const bestPossible = dp[i][arr2_length] + (arr1_length - i);
-      if (bestPossible < threshold) {
-        return dp[i][arr2_length]; // lower-bound; intentionally NOT cached
-      }
+function lcs(seq1, seq2, threshold) {
+    "use strict";
+    threshold ??= 0;
+    seq1 = [...(seq1 ?? [])];
+    seq2 = [...(seq2 ?? [])];
+    if (seq2.length > seq1.length) {
+        [seq1, seq2] = [seq2, seq1];
     }
-          }
-          const lcsValue = dp[arr1.length][arr2.length];
-          return lcsValue;
-        };
+    const arr1 = seq1;
+    const arr2 = seq2;
+    const arr1_length = arr1.length;
+    const arr2_length = arr2.length;
+    // Pre-DP rejection: the LCS can never exceed the shorter sequence's length
+    if (threshold > 0 && arr2_length < threshold) {
+        return seq1.includes(seq2) ? arr2_length : 0; // upper-bound < threshold → can't match; return best-case
+    }
+
+    const dp = Array(arr1.length + 1)
+        .fill(0)
+        .map(() => new Uint8Array(arr2.length + 1));
+    const dp_length = dp.length;
+    for (let i = 1; i !== dp_length; i++) {
+        const dpi_length = dp[i].length;
+        for (let x = 1; x !== dpi_length; x++) {
+            if (arr1[i - 1] === arr2[x - 1]) {
+                dp[i][x] = dp[i - 1][x - 1] + 1;
+            } else {
+                dp[i][x] = Math.max(dp[i][x - 1], dp[i - 1][x]);
+            }
+        }
+        // Early termination: best possible score from here can't reach the threshold
+        if (threshold > 0) {
+            const bestPossible = dp[i][arr2_length] + (arr1_length - i);
+            if (bestPossible < threshold) {
+                return dp[i][arr2_length]; // lower-bound; intentionally NOT cached
+            }
+        }
+    }
+    const lcsValue = dp[arr1.length][arr2.length];
+    return lcsValue;
+};
+
 function weightedLcs(left, right) {
-  const a = String(left ?? "");
-  const b = String(right ?? "");
-  if (!a.length || !b.length) {
-    return 0;
-  }
-  return (lcs(a, b) * Math.min(a.length, b.length)) / Math.max(a.length, b.length);
+    const a = String(left ?? "");
+    const b = String(right ?? "");
+    if (!a.length || !b.length) {
+        return 0;
+    }
+    return (lcs(a, b) * Math.min(a.length, b.length)) / Math.max(a.length, b.length);
 }
 
 function followCount(model, key) {
-  return model[key] ? Object.keys(model[key]).length : 0;
+    return model[key] ? Object.keys(model[key]).length : 0;
 }
 
 function contextBoost(tokens, key) {
-  const recent = tokens.slice(-20).join(" ");
-  if (!recent) {
-    return 0;
-  }
-  return weightedLcs(recent, key) / Math.max(1, key.length);
+    const recent = tokens.slice(-20).join(" ");
+    if (!recent) {
+        return 0;
+    }
+    return weightedLcs(recent, key) / Math.max(1, key.length);
 }
 
 function findClosestKey(source, context) {
-  source = String(source);
-  const source_length = source.length;
-  let bestKey = "";
-  let bestScore = 0;
-  const recent = context.slice(-80).join(" ");
-  const deadline = performance.now() + FIND_KEY_DEADLINE_MS;
-  const workerState_trimodelKeys_length = workerState.trimodelKeys.length;
-  for (let i = 0; i !== workerState_trimodelKeys_length; i++) {
-    /*if ((i & 63) === 0 && performance.now() > deadline) {
-      break;
-    }*/
+    source = String(source);
+    const source_length = source.length;
+    let bestKey = "";
+    let bestScore = 0;
+    const recent = context.slice(-80).join(" ");
+    const deadline = performance.now() + FIND_KEY_DEADLINE_MS;
+    const workerState_trimodelKeys_length = workerState.trimodelKeys.length;
+    for (let i = 0; i !== workerState_trimodelKeys_length; i++) {
+        /*if ((i & 63) === 0 && performance.now() > deadline) {
+          break;
+        }*/
 
-    const key = workerState.trimodelKeys[i];
-    const key_length = key.length;
-    const threshold = Math.floor(0.8*Math.max(key_length, source_length));
-    const sub = lcs(key, source, threshold);
-    const overlap = sub * Math.min(key_length, source_length) / Math.max(key_length, source_length);
-    const repeatPenalty = 1 + recent.split(key).length - 1;
-    const score = overlap / repeatPenalty;
+        const key = workerState.trimodelKeys[i];
+        const key_length = key.length;
+        const threshold = Math.floor(0.8 * Math.max(key_length, source_length));
+        const sub = lcs(key, source, threshold);
+        const overlap = sub * Math.min(key_length, source_length) / Math.max(key_length, source_length);
+        const repeatPenalty = 1 + recent.split(key).length - 1;
+        const score = overlap / repeatPenalty;
 
-    if (score > bestScore) {
-      bestScore = score;
-      bestKey = key;
-      if (sub >= threshold) {
-        break;
-      }
+        if (score > bestScore) {
+            bestScore = score;
+            bestKey = key;
+            if (sub >= threshold) {
+                break;
+            }
+        }
     }
-  }
 
-  return bestKey;
+    return bestKey;
 }
 
 const actors =
-  "Aragorn|Frodo|Gandalf|Legolas|Gimli|Boromir|Samwise|Merry|Pippin|Faramir|Denethor|Elrond|Galadriel|Saruman"
-  .toLowerCase()
-  .split("|");
+    "Aragorn|Frodo|Gandalf|Legolas|Gimli|Boromir|Samwise|Merry|Pippin|Faramir|Denethor|Elrond|Galadriel|Saruman"
+    .toLowerCase()
+    .split("|");
 const activeActors = {};
 
 function getActorBoost(model, key) {
-  if (!model[key]) return 0;
-  let score = 0;
-  const smk = String(model[key]).toLowerCase();
-  for (const actor in activeActors) {
-    if (smk.includes(actor)) {
-      score += 0.2;
+    if (!model[key]) return 0;
+    let score = 0;
+    const smk = String(model[key]).toLowerCase();
+    for (const actor in activeActors) {
+        if (smk.includes(actor)) {
+            score += 0.2;
+        }
+        score += 0.2 * ((lcs(smk, actor) * actor.length) / smk.length);
     }
-    score += 0.2 * ((lcs(smk, actor) * actor.length) / smk.length);
-  }
-  return score;
+    return score;
 }
 
-function selectCandidate(matches, model, context, trigramKey='',fuzzyKey) {
-  let bestKey = "";
-  let bestScore = -Infinity;
-  const recent = context.slice(-80).join(" ");
+function selectCandidate(matches, model, context, trigramKey = '', fuzzyKey) {
+    let bestKey = "";
+    let bestScore = -Infinity;
+    const recent = context.slice(-80).join(" ");
 
-  for (const [key, weight] of Object.entries(matches ?? {})) {
-    const repeatPenalty = 1 + recent.split(key).length - 1;
-    const score =
-      ((Number(weight) || 0) +
-        getActorBoost(model, key) +
-        followCount(model, key) * 0.015 +
-        contextBoost(context, key) * 2) /
-      repeatPenalty;
+    for (const [key, weight] of Object.entries(matches ?? {})) {
+        const repeatPenalty = 1 + recent.split(key).length - 1;
+        const score =
+            ((Number(weight) || 0) +
+                getActorBoost(model, key) +
+                followCount(model, key) * 0.015 +
+                contextBoost(context, key) * 2) /
+            repeatPenalty;
 
-    if (score > bestScore || (score === bestScore && Math.random() < 0.15)) {
-      bestScore = score;
-      bestKey = key;
+        if (score > bestScore || (score === bestScore && Math.random() < 0.15)) {
+            bestScore = score;
+            bestKey = key;
+        }
     }
-  }
-  let lk;
-  let keyMatch;
-  try{
-   keyMatch = String(bestKey);
-   lk = keyMatch.toLowerCase();
-  }catch(e){
-    console.warn(e);
-  }
-  for (const actor of actors) {
-    if (lk.includes(actor)) {
-      activeActors[actor] = 20;
+    let lk;
+    let keyMatch;
+    try {
+        keyMatch = String(bestKey);
+        lk = keyMatch.toLowerCase();
+    } catch (e) {
+        console.warn(e);
     }
-  }
-  for (const actor in activeActors) {
-    activeActors[actor]--;
-    if (activeActors[actor] <= 0) {
-      delete activeActors[actor];
+    for (const actor of actors) {
+        if (lk.includes(actor)) {
+            activeActors[actor] = 20;
+        }
     }
-  }
-  if (/[A-Z]/.test(keyMatch) && !/\?|\.|\!/.test(trigramKey)) {
-    activeActors[keyMatch] = 20;
-  }
-  const potentialActors = String(keyMatch).split(/[^a-zA-Z]+/).filter(Boolean);
-  for(const a of potentialActors){
-    if(a.length > 5 && !words100.includes(a)){
-      activeActors[a] = 20;
+    for (const actor in activeActors) {
+        activeActors[actor]--;
+        if (activeActors[actor] <= 0) {
+            delete activeActors[actor];
+        }
     }
-  }
-  delete activeActors["I"];
-  if(fuzzyKey){
-    bestKey = `<${fuzzyKey}> ${bestKey}`;
-  }
-  return bestKey;
+    if (/[A-Z]/.test(keyMatch) && !/\?|\.|\!/.test(trigramKey)) {
+        activeActors[keyMatch] = 20;
+    }
+    const potentialActors = String(keyMatch).split(/[^a-zA-Z]+/).filter(Boolean);
+    for (const a of potentialActors) {
+        if (a.length > 5 && !words100.includes(a)) {
+            activeActors[a] = 20;
+        }
+    }
+    delete activeActors["I"];
+    if (fuzzyKey) {
+        bestKey = `<${fuzzyKey}> ${bestKey}`;
+    }
+    return bestKey;
 }
 
 function randomSeedTokens() {
-  const key =
-    workerState.trimodelKeys[
-      Math.floor(Math.random() * Math.max(1, workerState.trimodelKeys.length))
-    ] || "";
+    const key =
+        workerState.trimodelKeys[
+            Math.floor(Math.random() * Math.max(1, workerState.trimodelKeys.length))
+        ] || "";
 
-  return key.split(" ").filter(Boolean);
+    return key.split(" ").filter(Boolean);
 }
 
 
 
 function getNextToken(context) {
-  if (!context.length) {
-    context.push(...randomSeedTokens());
-  }
+    if (!context.length) {
+        context.push(...randomSeedTokens());
+    }
 
-  const previous = context[context.length - 2] ?? "";
-  const current = context[context.length - 1] ?? "";
-  const trigramKey = `${previous} ${current}`.trim();
+    const previous = context[context.length - 2] ?? "";
+    const current = context[context.length - 1] ?? "";
+    const trigramKey = `${previous} ${current}`.trim();
 
-  let model = workerState.trimodel;
-  let matches = model[trigramKey];
+    let model = workerState.trimodel;
+    let matches = model[trigramKey];
 
-  if (!matches) {
-    model = workerState.bimodel;
-    matches = model[current];
-  }
-  let fuzzyKey;
-  if (!matches) {
-    model = workerState.trimodel;
-    fuzzyKey = findClosestKey(trigramKey || current, context);
-    matches = model[fuzzyKey];
-  }
+    if (!matches) {
+        model = workerState.bimodel;
+        matches = model[current];
+    }
+    let fuzzyKey;
+    if (!matches) {
+        model = workerState.trimodel;
+        fuzzyKey = findClosestKey(trigramKey || current, context);
+        matches = model[fuzzyKey];
+    }
 
-  return selectCandidate(matches, model, context, trigramKey, fuzzyKey);
+    return selectCandidate(matches, model, context, trigramKey, fuzzyKey);
 }
 
 async function fetchModelJson(path) {
-  const response = await fetch(path);
-  if (!response.ok) {
-    throw new Error(`Unable to load ${path}: ${response.status}`);
-  }
-
-  if (path.endsWith(".gz")) {
-    if (!response.body || typeof DecompressionStream !== "function") {
-      throw new Error("Gzip decompression is not available in this browser.");
+    const response = await fetch(path);
+    if (!response.ok) {
+        throw new Error(`Unable to load ${path}: ${response.status}`);
     }
-    const stream = response.body.pipeThrough(new DecompressionStream("gzip"));
-    return JSON.parse(await new Response(stream).text());
-  }
 
-  return JSON.parse(await response.text());
+    if (path.endsWith(".gz")) {
+        if (!response.body || typeof DecompressionStream !== "function") {
+            throw new Error("Gzip decompression is not available in this browser.");
+        }
+        const stream = response.body.pipeThrough(new DecompressionStream("gzip"));
+        return JSON.parse(await new Response(stream).text());
+    }
+
+    return JSON.parse(await response.text());
 }
 
 async function loadModel(stem) {
-  try {
-    return await fetchModelJson(`${stem}.gz`);
-  } catch {
-    return await fetchModelJson(stem);
-  }
+    try {
+        return await fetchModelJson(`${stem}.gz`);
+    } catch {
+        return await fetchModelJson(stem);
+    }
 }
 
 async function initializeModels() {
-  const [trimodel, bimodel] = await Promise.all([
-    loadModel("trimodel.json.txt"),
-    loadModel("bimodel.json.txt"),
-  ]);
+    const [trimodel, bimodel] = await Promise.all([
+        loadModel("trimodel.json.txt"),
+        loadModel("bimodel.json.txt"),
+    ]);
 
-  workerState.trimodel = trimodel;
-  workerState.bimodel = bimodel;
-  workerState.trimodelKeys = Object.keys(trimodel);
+    workerState.trimodel = trimodel;
+    workerState.bimodel = bimodel;
+    workerState.trimodelKeys = Object.keys(trimodel);
 }
 
 const initPromise = initializeModels();
 
 (async () => {
-  try {
-    await initPromise;
-    postMessage({ type: "ready" });
-  } catch (error) {
-    postMessage({
-      type: "ready-error",
-      error: error?.message ?? String(error),
-    });
-  }
+    try {
+        await initPromise;
+        postMessage({
+            type: "ready"
+        });
+    } catch (error) {
+        postMessage({
+            type: "ready-error",
+            error: error?.message ?? String(error),
+        });
+    }
 })();
 
-async function streamGeneration({ streamId, context = [], maxTokens = 72, maxSentences = 4 }) {
-  const localContext = Array.isArray(context) ? [...context] : [];
-  const generated = [];
-  const tokenLimit = Math.max(8, Number(maxTokens) || 72);
-  const sentenceLimit = Math.max(1, Number(maxSentences) || 4);
-  const promptTokens = localContext.length;
-
-  const completionId = `chatcmpl-${crypto.randomUUID()}`;
-  const created = Math.floor(Date.now() / 1000);
-  const modelName = "lm-ngram";
-  let runningText = "";
-  let finishReason = "stop";
-
-  // Initial chunk: role announcement
-  postMessage({
-    type: "stream-chunk",
+async function streamGeneration({
     streamId,
-    chunk: {
-      id: completionId,
-      object: "chat.completion.chunk",
-      created,
-      model: modelName,
-      choices: [{ index: 0, delta: { role: "assistant", content: "" }, finish_reason: null }],
-    },
-  });
+    context = [],
+    maxTokens = 72,
+    maxSentences = 4
+}) {
+    const localContext = Array.isArray(context) ? [...context] : [];
+    const generated = [];
+    const tokenLimit = Math.max(8, Number(maxTokens) || 72);
+    const sentenceLimit = Math.max(1, Number(maxSentences) || 4);
+    const promptTokens = localContext.length;
 
-  for (let index = 0; index < tokenLimit; index++) {
-    const controller = activeStreams.get(streamId);
-    if (!controller || controller.signal.aborted) {
-      return;
-    }
+    const completionId = `chatcmpl-${crypto.randomUUID()}`;
+    const created = Math.floor(Date.now() / 1000);
+    const modelName = "lm-ngram";
+    let runningText = "";
+    let finishReason = "stop";
 
-    const token = getNextToken(localContext);
-    if (!token) {
-      break;
-    }
-
-    localContext.push(token);
-    generated.push(token);
-
-    const contentDelta = computeContentDelta(runningText, token);
-    runningText += contentDelta;
-
+    // Initial chunk: role announcement
     postMessage({
-      type: "stream-chunk",
-      streamId,
-      chunk: {
-        id: completionId,
-        object: "chat.completion.chunk",
-        created,
-        model: modelName,
-        choices: [{ index: 0, delta: { content: contentDelta }, finish_reason: null }],
-        _token: token,
-      },
+        type: "stream-chunk",
+        streamId,
+        chunk: {
+            id: completionId,
+            object: "chat.completion.chunk",
+            created,
+            model: modelName,
+            choices: [{
+                index: 0,
+                delta: {
+                    role: "assistant",
+                    content: ""
+                },
+                finish_reason: null
+            }],
+        },
     });
 
-    const partialText = tokensToText(generated).trim();
-    if (countSentences(partialText) >= sentenceLimit && /[.!?]$/.test(displayToken(token))) {
-      break;
+    for (let index = 0; index < tokenLimit; index++) {
+        const controller = activeStreams.get(streamId);
+        if (!controller || controller.signal.aborted) {
+            return;
+        }
+
+        const token = getNextToken(localContext);
+        if (!token) {
+            break;
+        }
+
+        localContext.push(token);
+        generated.push(token);
+
+        const contentDelta = computeContentDelta(runningText, token);
+        runningText += contentDelta;
+
+        postMessage({
+            type: "stream-chunk",
+            streamId,
+            chunk: {
+                id: completionId,
+                object: "chat.completion.chunk",
+                created,
+                model: modelName,
+                choices: [{
+                    index: 0,
+                    delta: {
+                        content: contentDelta
+                    },
+                    finish_reason: null
+                }],
+                _token: token,
+            },
+        });
+
+        const partialText = tokensToText(generated).trim();
+        if (countSentences(partialText) >= sentenceLimit && /[.!?]$/.test(displayToken(token))) {
+            break;
+        }
+
+        if (index === tokenLimit - 1) {
+            finishReason = "length";
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 0));
     }
 
-    if (index === tokenLimit - 1) {
-      finishReason = "length";
-    }
+    // Final chunk: finish reason and usage
+    postMessage({
+        type: "stream-chunk",
+        streamId,
+        chunk: {
+            id: completionId,
+            object: "chat.completion.chunk",
+            created,
+            model: modelName,
+            choices: [{
+                index: 0,
+                delta: {},
+                finish_reason: finishReason
+            }],
+            usage: {
+                prompt_tokens: promptTokens,
+                completion_tokens: generated.length,
+                total_tokens: promptTokens + generated.length,
+            },
+        },
+    });
 
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  }
-
-  // Final chunk: finish reason and usage
-  postMessage({
-    type: "stream-chunk",
-    streamId,
-    chunk: {
-      id: completionId,
-      object: "chat.completion.chunk",
-      created,
-      model: modelName,
-      choices: [{ index: 0, delta: {}, finish_reason: finishReason }],
-      usage: {
-        prompt_tokens: promptTokens,
-        completion_tokens: generated.length,
-        total_tokens: promptTokens + generated.length,
-      },
-    },
-  });
-
-  postMessage({ type: "stream-end", streamId });
+    postMessage({
+        type: "stream-end",
+        streamId
+    });
 }
 
 onmessage = async (event) => {
-  const data = event.data;
-  if (!data || typeof data !== "object") {
-    return;
-  }
-
-  const { type, streamId } = data;
-
-  if (type === "stream-cancel") {
-    const controller = activeStreams.get(streamId);
-    if (controller) {
-      controller.abort();
-      activeStreams.delete(streamId);
+    const data = event.data;
+    if (!data || typeof data !== "object") {
+        return;
     }
-    return;
-  }
 
-  if (type !== "stream-start") {
-    return;
-  }
+    const {
+        type,
+        streamId
+    } = data;
 
-  const controller = new AbortController();
-  activeStreams.set(streamId, controller);
-
-  try {
-    await initPromise;
-    await streamGeneration(data);
-  } catch (error) {
-    if (!controller.signal.aborted) {
-      postMessage({
-        type: "stream-error",
-        streamId,
-        error: error?.message ?? String(error),
-      });
+    if (type === "stream-cancel") {
+        const controller = activeStreams.get(streamId);
+        if (controller) {
+            controller.abort();
+            activeStreams.delete(streamId);
+        }
+        return;
     }
-  } finally {
-    activeStreams.delete(streamId);
-  }
+
+    if (type !== "stream-start") {
+        return;
+    }
+
+    const controller = new AbortController();
+    activeStreams.set(streamId, controller);
+
+    try {
+        await initPromise;
+        await streamGeneration(data);
+    } catch (error) {
+        if (!controller.signal.aborted) {
+            postMessage({
+                type: "stream-error",
+                streamId,
+                error: error?.message ?? String(error),
+            });
+        }
+    } finally {
+        activeStreams.delete(streamId);
+    }
 };
