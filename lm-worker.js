@@ -75,8 +75,9 @@ function countSentences(text) {
     .filter(Boolean).length;
 }
 const lcsMemo = {};
-function lcs(seq1, seq2,threshold=0) {
+function lcs(seq1, seq2,threshold) {
           "use strict";
+  threshold ??=0;
           seq1 = [...(seq1 ?? [])];
           seq2 = [...(seq2 ?? [])];
           if (seq2.length > seq1.length) {
