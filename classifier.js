@@ -26,7 +26,7 @@ async function classifyTableCells(url, outDir = "./classified") {
   const dom = new JSDOM(html);
   const tds = [...dom.window.document.querySelectorAll("td")];
   const texts = tds
-    .map((td) => td.textContent.trim())
+    .map((td) => new JSDOM(td.textContent.trim()).window.document.body.textContent.trim())
     .filter((t) => t.length > 0);
 
   // 3. Group by language

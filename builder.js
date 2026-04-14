@@ -194,13 +194,17 @@ const mergeModels = (...models) => {
   }
   return model;
 };
-if (typeof process) {
+if (typeof process !== "undefined") {
   globalThis.jsdom = require("jsdom");
   globalThis.JSDOM = jsdom.JSDOM;
 }
 
 function parseDoc(input) {
   return new JSDOM(input).window.document;
+}
+
+function textToText(txt) {
+  return parseDoc(txt).firstElementChild.textContent.trim();
 }
 
 async function fetchText() {
@@ -431,8 +435,8 @@ if (typeof process) {
     (async () => {
 
       let mvlines = await readFile("/Users/pa27161/Downloads/archive/movie_lines.txt");
-      mvlines = mvlines.split("\n").map(line => line.split("+++$+++").pop()).join("\n");
-      await writeFile('../mvlines.txt', mvlines);
+      mvlines = mvlines.split("\n").map(line => (line.split("+++$+++").pop())).join("\n");
+      await writeFile('../mvlines.txt', textToText(mvlines));
       //await writeFile('hobbit-down.txt',(await readFile('hobbit.txt')).toLowerCase());
       let texts = (
         await Promise.all([
