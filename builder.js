@@ -1,3 +1,10 @@
+// Logging utility
+function log(...args) {
+  console.log('[builder.js]', ...args);
+}
+(function initLogging(){
+  log('builder.js started');
+})();
 (async()=>{
 
 // builder.js
@@ -13,7 +20,8 @@ const binary = createBinaryModuleFromUrl(
 let globalLinter;
 
 async function setupLinter() {
-    globalLinter = new LocalLinter({ binary });
+  log('setupLinter: initializing');
+  globalLinter = new LocalLinter({ binary });
     await globalLinter.setup();
     
     // Set config once
@@ -31,28 +39,35 @@ async function setupLinter() {
         Matcher: false, // Disables the heavy pattern-matching engine
         Correctness: true // Keeps basic grammar/punctuation fixes
     });
+    log('setupLinter: finished');
 }
 
 await setupLinter();
 
 async function harper(text) {
-    // Use the pre-warmed linter instance
-    const lints = await globalLinter.lint(text);
-    let correctedText = text;
-    
-    const sortedLints = lints.sort((a, b) => b.span.start - a.span.start);
-    for (const lint of sortedLints) {
-        if (lint.suggestions?.length > 0) {
-            correctedText = await globalLinter.applySuggestion(correctedText, lint, lint.suggestions[0]);
-        }
+  log('harper: linting text', { length: text?.length });
+  // Use the pre-warmed linter instance
+  const lints = await globalLinter.lint(text);
+  log('harper: lints returned', lints?.length);
+  let correctedText = text;
+  let applied = 0;
+
+  const sortedLints = lints.sort((a, b) => b.span.start - a.span.start);
+  for (const lint of sortedLints) {
+    if (lint.suggestions?.length > 0) {
+      correctedText = await globalLinter.applySuggestion(correctedText, lint, lint.suggestions[0]);
+      applied++;
     }
-    return correctedText;
+  }
+  log('harper: applied suggestions', applied);
+  return correctedText;
 }
 
 async function processInBatches(lines, batchSize = 500) {
     const results = [];
-    const allLines = lines.split("\n");
+    const allLines = lines.split("\n").map(x=>x.trim()).filter(Boolean);
     const allLinesLength = allLines.length;
+  log('processInBatches: start', { totalLines: allLinesLength, batchSize });
     for (let i = 0; i < allLinesLength; i += batchSize) {
         const batch = allLines.slice(i, i + batchSize);
         // Join lines into one large string to minimize WASM call overhead
@@ -61,9 +76,9 @@ async function processInBatches(lines, batchSize = 500) {
         const correctedBatch = await harper(joinedText);
         
         // Split back into lines
-        results.push(...correctedBatch.split('\n'));
+        results.push(...correctedBatch.split('\n').map(x=>x.trim()).filter(Boolean));
         
-        console.log(`Processed ${i + batch.length} / ${allLines.length} lines...`);
+    log('processInBatches: progress', { processed: i + batch.length, total: allLinesLength });
     }
     return results.join('\n');
 }
@@ -78,6 +93,7 @@ const norm = (str) => {
 };
 
 const glueFixes = (text) => {
+  log('glueFixes: called', { len: text?.length });
   return text
     .replaceAll(/\sthe\s+/g, " the_")
     .replace(/\sa\s+/g, " a_")
@@ -86,73 +102,94 @@ const glueFixes = (text) => {
 
 // run **before** you split into tokens
 const glueCommonPairs = (text) => {
+  log('glueCommonPairs: called', { len: text?.length });
   const re = RegExp(`\\b(${words100})\\s+(${words100})\\b`, "g");
   let next = text,
     prev;
+  let iterations = 0;
   do {
     prev = next;
     next = prev.replace(re, " $1_$2 ");
+    iterations++;
   } while (next !== prev);
+  log('glueCommonPairs: iterations', iterations);
   return next;
 };
 
 const glueCommonReverse = (text) => {
+  log('glueCommonReverse: called', { len: text?.length });
   text = [...text].reverse().join("");
   const re = RegExp(`\\b(${[...words100].reverse().join("")})\\s+(${[...words100].reverse().join("")})\\b`, "g");
   let next = text,
     prev;
+  let iterations = 0;
   do {
     prev = next;
     next = prev.replace(re, " $1_$2 ");
+    iterations++;
   } while (next !== prev);
+  log('glueCommonReverse: iterations', iterations);
   return [...next].reverse().join("");
 };
 
 const glueShortPairs = (text) => {
+  log('glueShortPairs: called', { len: text?.length });
   const re = /\b([a-z]{1,3})\s+([a-z]{1,3})\b/g;
   let next = text,
     prev;
+  let iterations = 0;
   do {
     prev = next;
     next = prev.replace(re, " $1_$2 ");
+    iterations++;
   } while (next !== prev);
+  log('glueShortPairs: iterations', iterations);
   return next;
 };
 const words = words100 + "|[a-z]{1,3}";
 const gluePairs = (text) => {
+  log('gluePairs: called', { len: text?.length });
   const re = RegExp(`\\b(${words})\\s+(${words})\\b`, "g");
   let next = text,
     prev;
+  let iterations = 0;
   do {
     prev = next;
     next = prev.replace(re, " $1_$2 ");
+    iterations++;
   } while (next !== prev);
+  log('gluePairs: iterations', iterations);
   return next;
 };
 
 const revWords = [...words100].reverse().join("") + "|[a-z]{1,3}";
 const glueReverse = (text) => {
+  log('glueReverse: called', { len: text?.length });
   text = [...text].reverse().join("");
   const re = RegExp(`\\b(${words})\\s+(${words})\\b`, "g");
   let next = text,
     prev;
+  let iterations = 0;
   do {
     prev = next;
     next = prev.replace(re, "$1_$2 ");
+    iterations++;
   } while (next !== prev);
+  log('glueReverse: iterations', iterations);
   return [...next].reverse().join("");
 };
 
 
 const glueShortReverse = (text) => {
+  log('glueShortReverse: called', { len: text?.length });
   text = [...text].reverse().join("");
-  next = glueShortPairs(text);
+  let next = glueShortPairs(text);
   return [...next].reverse().join("");
 };
 
 
 const fixText = (text) => {
-  return text
+  return norm(text
    // .replace(/[^\-\_a-zA-Z\.\?\!,';\s\(\)]/g, " ")
     .replace(/(\s*\.)+/g, ".")
     .replace(/(\s*\?)+/g, "?")
@@ -160,26 +197,32 @@ const fixText = (text) => {
     .replace(/(\s*\,)+/g, ",")
     .replace(/\s+\./g, '.')
     .replace(/\s+,/g, ',')
-    .replace(/[A-Z]{2,}/g, (x) => x[0] + x.slice(1).toLowerCase());
+    .replace(/[A-Z]{2,}/g, (x) => x[0] + x.slice(1).toLowerCase()));
 };
 
 function buildSGrams(text) {
-  return norm(fixText(text))
+  log('buildSGrams: called', { len: text?.length });
+  const out = norm(fixText(text))
     .split(/(?<=[.!?,;])\s+/)
     .map((x) => x.trim().replace(/\s+/g, " "))
     .filter((x) => x);
+  log('buildSGrams: returning', { sgrams: out.length });
+  return out;
 }
 
-function buildNGrams(text, n = 3) {
+function buildNGrams(text, n = 3,type="normal") {
   const model = {};
   text = fixText(text);
+  log('buildNGrams: called', { len: text?.length, n });
   let tokens = norm(
-      `${gluePairs(text)} ${glueReverse(text)} ${text} ${gluePairs(glueFixes(fixText(text)))} ${glueReverse(glueFixes(fixText(text)))} `,
-+    `${glueShortPairs(text)} ${glueShortReverse(text)} ${text} ${glueShortPairs(glueFixes(fixText(text)))} ${glueShortReverse(glueFixes(fixText(text)))} `,
-+`${glueCommonPairs(text)} ${glueCommonReverse(text)} ${text} ${glueCommonPairs(glueFixes(fixText(text)))} ${glueCommonReverse(glueFixes(fixText(text)))}`,
-)
+    
+    `${glueShortPairs(text)} ${glueShortReverse(text)} ${glueShortPairs(glueFixes(fixText(text)))} ${glueShortReverse(glueFixes(fixText(text)))}`
+    +(` ${glueCommonPairs(text)} ${glueCommonReverse(text)} ${glueCommonPairs(glueFixes(fixText(text)))} ${glueCommonReverse(glueFixes(fixText(text)))}`
+    +` ${gluePairs(text)} ${glueReverse(text)} ${text} ${gluePairs(glueFixes(fixText(text)))} ${glueReverse(glueFixes(fixText(text)))}`
+    ))
     .split(/\s+/)
     .filter((x) => x?.trim?.());
+  log('buildNGrams: tokens length', tokens.length);
   for (let i = 0; i < tokens.length - n + 1; i++) {
     const key = tokens
       .slice(i, i + n - 1)
@@ -191,6 +234,7 @@ function buildNGrams(text, n = 3) {
    //   continue;
     model[key] ??= {};
     model[key][next] = (model[key][next] || 0) + 1;
+    if (i % 50000 === 0 && i > 0) log('buildNGrams: progress', { i, tokensLength: tokens.length });
   }
   return model;
 }
@@ -201,6 +245,7 @@ function buildPrunedNGrams(text, n = 3) {
   let tokens = norm(text)
     .split(/\s+/)
     .filter((x) => x?.trim?.());
+  log('buildPrunedNGrams: tokens length', tokens.length);
   for (let i = 0; i < tokens.length - n + 1; i++) {
     const key = tokens
       .slice(i, i + n - 1)
@@ -212,6 +257,7 @@ function buildPrunedNGrams(text, n = 3) {
     if(key === next) continue; // remove self loops which are common but not useful 
     model[key] ??= {};
     model[key][next] = (model[key][next] || 0) + 1;
+    if (i % 50000 === 0 && i > 0) log('buildPrunedNGrams: progress', { i });
   }
   for (const key in model) {
     if (Object.keys(model[key]).length < 2) {
@@ -230,6 +276,7 @@ function reverseBuildNGrams(text, n = 3) {
     .split(/\s+/)
     .reverse()
     .filter((x) => x?.trim?.());
+  log('reverseBuildNGrams: tokens length', tokens.length);
   for (let i = 0; i < tokens.length - n + 1; i++) {
     const key = tokens
       .slice(i, i + n - 1)
@@ -252,6 +299,7 @@ function reverseBuildPrunedNGrams(text, n = 3) {
     .split(/\s+/)
     .reverse()
     .filter((x) => x?.trim?.());
+  log('reverseBuildPrunedNGrams: tokens length', tokens.length);
   for (let i = 0; i < tokens.length - n + 1; i++) {
     const key = tokens
       .slice(i, i + n - 1)
@@ -273,6 +321,7 @@ function reverseBuildPrunedNGrams(text, n = 3) {
 }
 
 const mergeModels = (...models) => {
+  log('mergeModels: called', { models: models.length });
   const model = {};
   for (const m of models) {
     for (const key in m) {
@@ -282,6 +331,7 @@ const mergeModels = (...models) => {
       }
     }
   }
+  log('mergeModels: merged keys', Object.keys(model).length);
   return model;
 };
 if (typeof process !== "undefined") {
@@ -290,22 +340,27 @@ if (typeof process !== "undefined") {
 }
 
 function parseDoc(input) {
+  log('parseDoc: parsing input length', { len: input?.length });
   return new JSDOM(input).window.document;
 }
 
 function textToText(txt) {
+  log('textToText: called');
   return parseDoc(txt).firstElementChild.textContent.trim();
 }
 
 async function fetchText() {
   try {
+    log('fetchText: fetching', { url: arguments?.[0] });
     return await (await fetch(...arguments)).text();
   } catch (e) {
+    log('fetchText: error', e?.message);
     return e.message;
   }
 }
 
 async function getDocText(url) {
+  log('getDocText: fetching', { url });
   const rawDoc = await fetchText(url);
   const doc = parseDoc(rawDoc);
   [
@@ -396,6 +451,7 @@ function getActorBoost(model, key) {
 
 //Get the next token in the sequence. This is the core of the model.
 function getNextToken(keywords, trimodel, bimodel, tokens = []) {
+  log('getNextToken: called', { keywords, tokensLength: tokens.length });
   const randoSkip = false; //Math.random() < 0.1;
   const strtok = stringify(tokens);
   let model = trimodel;
@@ -462,9 +518,7 @@ function getNextToken(keywords, trimodel, bimodel, tokens = []) {
     activeActors[keyMatch] = 20;
   }
   delete activeActors["I"];
-  console.log(
-    `Key ${keyMatch} selected from ${selectedModel} and skips ${randoSkip}`,
-  );
+  log('getNextToken: selected', { keyMatch, selectedModel, randoSkip });
   return keyMatch;
 }
 
@@ -477,7 +531,7 @@ const join = (x, y = "") => {
 };
 
 function generate(prompt, trimodel, bimodel, context = []) {
-  console.log(context.length);
+  log('generate: called', { prompt, contextLength: context.length });
   if (!prompt) {
     prompt = context[context.length - 1];
   }
@@ -497,11 +551,13 @@ function generate(prompt, trimodel, bimodel, context = []) {
     tokens.push(nextToken);
     out.push(nextToken);
   }
-  return out
+  const result = out
     .join(" ")
     .replace(/\? [a-z]/g, (x) => x.toUpperCase())
     .replace(/\. [a-z]/g, (x) => x.toUpperCase())
     .replace(/\! [a-z]/g, (x) => x.toUpperCase());
+  log('generate: result length', result.length);
+  return result;
 }
 
 if (typeof process) {
@@ -524,12 +580,13 @@ if (typeof process) {
     }
     (async () => {
 
-      let mvlines = await readFile("/Users/pa27161/Downloads/archive/movie_lines.txt");
-      mvlines = mvlines.split("\n").map(line => (line.split("+++$+++").pop())).join("\n");
-      await writeFile('../mvlines.txt', textToText(mvlines).replace(/\s+([\?\.\!,;:])/g, '$1'));
-      await writeFile('../mvlines.harper.txt',processInBatches(await readFile("../mvlines.txt")));
+     // let mvlines = await readFile("/Users/pa27161/Downloads/archive/movie_lines.txt");
+      //mvlines = mvlines.split("\n").map(line => (line.split("+++$+++").pop())).join("\n");
+      //await writeFile('../mvlines.txt', textToText(mvlines).replace(/\s+([\?\.\!,;:])/g, '$1'));
+      //await writeFile('../mvlines.harper.txt', await processInBatches(await readFile("../mvlines.txt")));
       
       //await writeFile('hobbit-down.txt',(await readFile('hobbit.txt')).toLowerCase());
+      log('main: starting file reads');
       let texts = (
         await Promise.all([
             //getText(await readFile("classified/eng.html")),
@@ -593,7 +650,9 @@ if (typeof process) {
         .replace(/\s+\./g, ".")
         .replace(/\s+\!/g, "!")
         .replace(/\s+\?/g, "?")
-        .replaceAll('¬', ''));
+        .replaceAll('¬', '').replaceAll('�',"'"));
+
+      log('main: file reads complete', { files: texts.length });
 
       let texts2 = texts.map(text => text.replaceAll('-', ' ').replaceAll('—', ' '));
       let texts3 = texts.map(text => text.replaceAll('-', '').replaceAll('—', ''));
@@ -604,8 +663,10 @@ if (typeof process) {
       let allBimodels = allTexts.map(text => buildNGrams(text, 2)).concat(allTexts.map(text => buildPrunedNGrams(text, 2)));
 
       let trimodel = mergeModels(...allTrimodels);
+      log('main: trimodel built', { keys: Object.keys(trimodel).length });
       // trimodel = Object.fromEntries(Object.entries(trimodel).sort());
       let bimodel = mergeModels(...allBimodels);
+      log('main: bimodel built', { keys: Object.keys(bimodel).length });
       // bimodel = Object.fromEntries(Object.entries(bimodel).sort());
 
       /*let text = allTexts.join(' ');
@@ -631,6 +692,7 @@ if (typeof process) {
         "trimodel.json.txt",
         JSON.stringify(trimodel)
       );
+      log('main: wrote trimodel.json.txt');
       execSync("gzip -k --force trimodel.json.txt");
       /*
           fs.writeFileSync(
@@ -647,6 +709,7 @@ if (typeof process) {
         "bimodel.json.txt",
         JSON.stringify(bimodel)
       );
+      log('main: wrote bimodel.json.txt');
       execSync("gzip -k --force bimodel.json.txt");
       /*
           fs.writeFileSync(
@@ -674,8 +737,8 @@ if (typeof process) {
 */
       let context = [];
       let prompt = ">Aragorn";
-      console.log(prompt);
-      console.log(generate(prompt, trimodel, bimodel, context));
+      log('main: prompt', prompt);
+      log('main: sample generate', generate(prompt, trimodel, bimodel, context));
     })();
 }
 
