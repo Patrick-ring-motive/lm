@@ -12,6 +12,7 @@
   "type": "commonjs",
   "dependencies": {
     "franc": "^6.2.0",
+    "harper.js": "^2.0.0",
     "jsdom": "^29.0.1"
   }
 }

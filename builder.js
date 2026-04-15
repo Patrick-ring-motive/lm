@@ -1,3 +1,73 @@
+(async()=>{
+
+// builder.js
+const { LocalLinter, createBinaryModuleFromUrl } = await import('harper.js');
+const { pathToFileURL } = await import('url');
+const path = await import('path');
+
+const binary = createBinaryModuleFromUrl(
+    pathToFileURL(path.resolve(__dirname, 'node_modules/harper.js/dist/harper_wasm_bg.wasm')).href
+);
+
+// Initialize ONCE at the top level or in a setup function
+let globalLinter;
+
+async function setupLinter() {
+    globalLinter = new LocalLinter({ binary });
+    await globalLinter.setup();
+    
+    // Set config once
+    let config = await globalLinter.getLintConfig();
+    await globalLinter.setLintConfig({
+        ...config,
+        SpellCheck: false, // You mentioned this is already off
+        SentenceCapitalization: false,
+        LongSentences: false
+    });
+    config = await globalLinter.getLintConfig();
+    await globalLinter.setLintConfig({
+        ...config,
+        SpellCheck: false,
+        Matcher: false, // Disables the heavy pattern-matching engine
+        Correctness: true // Keeps basic grammar/punctuation fixes
+    });
+}
+
+await setupLinter();
+
+async function harper(text) {
+    // Use the pre-warmed linter instance
+    const lints = await globalLinter.lint(text);
+    let correctedText = text;
+    
+    const sortedLints = lints.sort((a, b) => b.span.start - a.span.start);
+    for (const lint of sortedLints) {
+        if (lint.suggestions?.length > 0) {
+            correctedText = await globalLinter.applySuggestion(correctedText, lint, lint.suggestions[0]);
+        }
+    }
+    return correctedText;
+}
+
+async function processInBatches(lines, batchSize = 500) {
+    const results = [];
+    const allLines = lines.split("\n");
+    const allLinesLength = allLines.length;
+    for (let i = 0; i < allLinesLength; i += batchSize) {
+        const batch = allLines.slice(i, i + batchSize);
+        // Join lines into one large string to minimize WASM call overhead
+        const joinedText = batch.join('\n'); 
+        
+        const correctedBatch = await harper(joinedText);
+        
+        // Split back into lines
+        results.push(...correctedBatch.split('\n'));
+        
+        console.log(`Processed ${i + batch.length} / ${allLines.length} lines...`);
+    }
+    return results.join('\n');
+}
+
 let words100 = "years|ways|worlds|live|lives|hands|parts|children|eyes|places|weeks|cases|points|numbers|groups|problems|facts|times|days|men|women|one|two|three|four|five|six|seven|eight|nine|ten|zero|none|size|sized|sizes|sizing|calls|called|calling|leaves|lefts|leaving|try|tries|trying|feels|felt|feeling|seems|seemed|seeming|asks|asked|asking|tells|told|telling|finds|found|finding|looks|looked|looking|see|sees|seeing|saw|knows|knowing|knew|get|gets|got|getting|works|worked|working|I|a|able|about|after|all|also|am|an|and|any|are|as|ask|at|back|bad|be|because|been|being|bes|big|but|by|call|came|can|case|child|come|comes|coming|company|could|day|different|do|does|doing|done|early|even|eye|fact|feel|few|find|first|for|from|gave|get|give|gives|giving|go|goes|going|good|government|great|group|had|hand|has|have|he|her|high|him|his|how|if|important|in|into|is|it|its|just|know|large|last|leave|life|like|little|long|look|make|makes|making|man|me|most|my|new|next|no|not|now|number|of|old|on|one|only|or|other|our|out|over|own|part|people|person|place|point|problem|public|right|said|same|saw|say|says|see|seeing|seem|sees|shall|she|should|small|so|some|take|takes|taking|tell|than|that|the|their|them|then|there|these|they|thing|think|thinking|thinks|this|thought|time|to|took|try|two|up|us|use|used|uses|using|want|wanted|wanting|wants|was|way|we|week|well|went|were|what|when|which|who|will|with|woman|work|world|would|year|yes|yet|you|young|your";
 words100 = words100
   .split("|")
@@ -457,11 +527,14 @@ if (typeof process) {
       let mvlines = await readFile("/Users/pa27161/Downloads/archive/movie_lines.txt");
       mvlines = mvlines.split("\n").map(line => (line.split("+++$+++").pop())).join("\n");
       await writeFile('../mvlines.txt', textToText(mvlines).replace(/\s+([\?\.\!,;:])/g, '$1'));
+      await writeFile('../mvlines.harper.txt',processInBatches(await readFile("../mvlines.txt")));
+      
       //await writeFile('hobbit-down.txt',(await readFile('hobbit.txt')).toLowerCase());
       let texts = (
         await Promise.all([
             //getText(await readFile("classified/eng.html")),
-          readFile("../mvlines.txt")
+          readFile("../mvlines.txt"),
+          readFile("../mvlines.harper.txt"),
          // readFile("fellowship.txt"),
           //  readFile("fellowship-lan.txt"),
           //  readFile("fellowship-fren.txt"),
@@ -605,3 +678,5 @@ if (typeof process) {
       console.log(generate(prompt, trimodel, bimodel, context));
     })();
 }
+
+})();
