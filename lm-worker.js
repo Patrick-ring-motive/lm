@@ -132,7 +132,7 @@ function weightedLcs(left, right) {
     if (!a.length || !b.length) {
         return 0;
     }
-    return (lcs(a, b) * Math.min(a.length, b.length)) / Math.max(a.length, b.length);
+    return (word.lcs(a, b) * Math.min(a.length, b.length)) / Math.max(a.length, b.length);
 }
 
 function followCount(model, key) {
@@ -144,7 +144,7 @@ function contextBoost(tokens, key) {
     if (!recent) {
         return 0;
     }
-    return weightedLcs(recent, key) / Math.max(1, key.length);
+    return word.weighted(recent, key) / Math.max(1, key.length);
 }
 
 function findClosestKey(source, context) {
@@ -163,7 +163,7 @@ function findClosestKey(source, context) {
         const key = workerState.trimodelKeys[i];
         const key_length = key.length;
         const threshold = Math.floor(0.8 * Math.max(key_length, source_length));
-        const sub = lcs(key, source, threshold);
+        const sub = word.lcs(key, source, threshold);
         const overlap = sub * Math.min(key_length, source_length) / Math.max(key_length, source_length);
         const repeatPenalty = 1 + recent.split(key).length - 1;
         const score = overlap / repeatPenalty;
@@ -194,7 +194,7 @@ function getActorBoost(model, key) {
         if (smk.includes(actor)) {
             score += 0.2;
         }
-        score += 0.2 * ((lcs(smk, actor) * actor.length) / smk.length);
+        score += 0.2 * ((word.lcs(smk, actor) * actor.length) / smk.length);
     }
     return score;
 }
