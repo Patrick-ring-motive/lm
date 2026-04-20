@@ -79,31 +79,27 @@ async function harper(text) {
 
 async function processInBatches(lines, batchSize = 500) {
     const results = [];
-    const allLines = lines.split("\n").map(x=>x.trim()).filter(Boolean);
+    const allLines = lines.split(".").map(x=>x.trim()).filter(Boolean);
     const allLinesLength = allLines.length;
   log('processInBatches: start', { totalLines: allLinesLength, batchSize });
     for (let i = 0; i < allLinesLength; i += batchSize) {
         const batch = allLines.slice(i, i + batchSize);
         // Join lines into one large string to minimize WASM call overhead
-        const joinedText = batch.join('\n'); 
+        const joinedText = batch.join('.'); 
         
         const correctedBatch = await harper(joinedText);
         
         // Split back into lines
-        results.push(...correctedBatch.split('\n').map(x=>x.trim()).filter(Boolean));
+        results.push(...correctedBatch.split('.').map(x=>x.trim()).filter(Boolean));
         
     log('processInBatches: progress', { processed: i + batch.length, total: allLinesLength });
     }
-    return results.join('\n');
+    return results.join('. ');
 }
 
 
 
-      let mvlines = await readFile("../mvlines.txt");
+      let mvlines = await readFile("../tolkienizer/king.txt");
       mvlines = mvlines.split("\n").map(x=>x.trim()).filter(Boolean).join("\n")
-      await writeFile('../mvlines.txt', mvlines);
-      await writeFile('../mvlines.strict.txt', (await processInBatches(mvlines.replaceAll('-', ' ').replaceAll('—', ' ').replaceAll('�',"'"))).split("\n").map(x=>x.trim()).filter(Boolean).join("\n"));
-      mvlines = await readFile("../mvlines.harper.txt");
-      mvlines = mvlines.split("\n").map(x=>x.trim()).filter(Boolean).join("\n")
-      await writeFile('../mvlines.harper.txt', mvlines);
+      await writeFile('../tolkienizer/king.strict.txt', (await processInBatches(mvlines.replaceAll('-', ' ').replaceAll('—', ' ').replaceAll('�',"'"))).split("\n").map(x=>x.trim()).filter(Boolean).join("\n"));
     })();

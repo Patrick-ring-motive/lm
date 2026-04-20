@@ -216,10 +216,10 @@ function buildNGrams(text, n = 3,type="normal") {
   log('buildNGrams: called', { len: text?.length, n });
   let tokens = norm(
     
-    `${glueShortPairs(text)} ${glueShortReverse(text)} ${glueShortPairs(glueFixes(fixText(text)))} ${glueShortReverse(glueFixes(fixText(text)))}`
-    +(` ${glueCommonPairs(text)} ${glueCommonReverse(text)} ${glueCommonPairs(glueFixes(fixText(text)))} ${glueCommonReverse(glueFixes(fixText(text)))}`
-    +` ${gluePairs(text)} ${glueReverse(text)} ${text} ${gluePairs(glueFixes(fixText(text)))} ${glueReverse(glueFixes(fixText(text)))}`
-    ))
+    //`${glueShortPairs(text)} ${glueShortReverse(text)} ${glueShortPairs(glueFixes(fixText(text)))} ${glueShortReverse(glueFixes(fixText(text)))}`
+ //   +(` ${glueCommonPairs(text)} ${glueCommonReverse(text)} ${glueCommonPairs(glueFixes(fixText(text)))} ${glueCommonReverse(glueFixes(fixText(text)))}`
+   ` ${gluePairs(text)} ${glueReverse(text)} ${text} ${gluePairs(glueFixes(fixText(text)))} ${glueReverse(glueFixes(fixText(text)))}`
+ )
     .split(/\s+/)
     .filter((x) => x?.trim?.());
   log('buildNGrams: tokens length', tokens.length);
@@ -590,9 +590,17 @@ if (typeof process) {
       let texts = (
         await Promise.all([
             //getText(await readFile("classified/eng.html")),
-          readFile("../mvlines.txt"),
-          readFile("../mvlines.harper.txt"),
-          readFile("../mvlines.strict.txt"),
+            readFile("../mvlines.txt"),
+            readFile("../mvlines.harper.txt"),
+            readFile("../mvlines.strict.txt"),
+          readFile("../tolkienizer/hobbit.txt"),
+          readFile("../tolkienizer/fellowship.txt"),
+          readFile("../tolkienizer/towers.txt"),
+          readFile("../tolkienizer/king.txt"),
+          readFile("../tolkienizer/hobbit.strict.txt"),
+          readFile("../tolkienizer/fellowship.strict.txt"),
+          readFile("../tolkienizer/towers.strict.txt"),
+          readFile("../tolkienizer/king.strict.txt"),
          // readFile("fellowship.txt"),
           //  readFile("fellowship-lan.txt"),
           //  readFile("fellowship-fren.txt"),
