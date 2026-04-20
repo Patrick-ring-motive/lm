@@ -216,9 +216,9 @@ function buildNGrams(text, n = 3,type="normal") {
   log('buildNGrams: called', { len: text?.length, n });
   let tokens = norm(
     
-    //`${glueShortPairs(text)} ${glueShortReverse(text)} ${glueShortPairs(glueFixes(fixText(text)))} ${glueShortReverse(glueFixes(fixText(text)))}`
- //   +(` ${glueCommonPairs(text)} ${glueCommonReverse(text)} ${glueCommonPairs(glueFixes(fixText(text)))} ${glueCommonReverse(glueFixes(fixText(text)))}`
-   ` ${gluePairs(text)} ${glueReverse(text)} ${text} ${gluePairs(glueFixes(fixText(text)))} ${glueReverse(glueFixes(fixText(text)))}`
+    gluePairs(`${glueShortPairs(text)} ${glueShortReverse(text)} ${glueShortPairs(glueFixes(fixText(text)))} ${glueShortReverse(glueFixes(fixText(text)))}`
+    +` ${glueCommonPairs(text)} ${glueCommonReverse(text)} ${glueCommonPairs(glueFixes(fixText(text)))} ${glueCommonReverse(glueFixes(fixText(text)))}`)
+   +` ${gluePairs(text)} ${glueReverse(text)} ${text} ${gluePairs(glueFixes(fixText(text)))} ${glueReverse(glueFixes(fixText(text)))}`
  )
     .split(/\s+/)
     .filter((x) => x?.trim?.());
