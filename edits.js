@@ -102,7 +102,7 @@ async function processInBatches(lines, batchSize = 500) {
       let mvlines = await readFile("../mvlines.txt");
       mvlines = mvlines.split("\n").map(x=>x.trim()).filter(Boolean).join("\n")
       await writeFile('../mvlines.txt', mvlines);
-      await writeFile('../mvlines.strict.txt', (await processInBatches(mvlines)).split("\n").map(x=>x.trim()).filter(Boolean).join("\n"));
+      await writeFile('../mvlines.strict.txt', (await processInBatches(mvlines.replaceAll('-', ' ').replaceAll('—', ' ').replaceAll('�',"'"))).split("\n").map(x=>x.trim()).filter(Boolean).join("\n"));
       mvlines = await readFile("../mvlines.harper.txt");
       mvlines = mvlines.split("\n").map(x=>x.trim()).filter(Boolean).join("\n")
       await writeFile('../mvlines.harper.txt', mvlines);

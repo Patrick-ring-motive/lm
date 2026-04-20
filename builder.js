@@ -592,6 +592,7 @@ if (typeof process) {
             //getText(await readFile("classified/eng.html")),
           readFile("../mvlines.txt"),
           readFile("../mvlines.harper.txt"),
+          readFile("../mvlines.strict.txt"),
          // readFile("fellowship.txt"),
           //  readFile("fellowship-lan.txt"),
           //  readFile("fellowship-fren.txt"),
@@ -654,7 +655,7 @@ if (typeof process) {
 
       log('main: file reads complete', { files: texts.length });
 
-      let texts2 = texts.map(text => text.replaceAll('-', ' ').replaceAll('—', ' '));
+      let texts2 = texts.map(text => text.replaceAll('-', ' ').replaceAll('—', ' ').replaceAll('�',"'"));
       let texts3 = texts.map(text => text.replaceAll('-', '').replaceAll('—', ''));
       let allTexts = texts.concat(texts2).concat(texts3);
 
