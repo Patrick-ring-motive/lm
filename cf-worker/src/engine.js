@@ -53,16 +53,18 @@ function lcs(left, right) {
   const b = [...String(right ?? "")];
   if (!a.length || !b.length) return 0;
 
-  const table = Array.from({ length: a.length + 1 }, () =>
+  const table = Array.from({
+      length: a.length + 1
+    }, () =>
     new Array(b.length + 1).fill(0),
   );
 
   for (let r = 1; r <= a.length; r++) {
     for (let c = 1; c <= b.length; c++) {
       table[r][c] =
-        a[r - 1] === b[c - 1]
-          ? table[r - 1][c - 1] + 1
-          : Math.max(table[r - 1][c], table[r][c - 1]);
+        a[r - 1] === b[c - 1] ?
+        table[r - 1][c - 1] + 1 :
+        Math.max(table[r - 1][c], table[r][c - 1]);
     }
   }
   return table[a.length][b.length];
