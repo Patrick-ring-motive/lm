@@ -40,7 +40,12 @@ export class WorkerWrapper {
         return;
       }
 
-      const { type, id, result, error } = event.data;
+      const {
+        type,
+        id,
+        result,
+        error
+      } = event.data;
 
       if (type === "ready") {
         this._readySettled = true;
@@ -57,7 +62,11 @@ export class WorkerWrapper {
       if (id && this.transactions.has(id)) {
         const transaction = this.transactions.get(id);
         this.transactions.delete(id);
-        transaction.resolve({ value: result, error, [TRANSACTION]: transaction.token });
+        transaction.resolve({
+          value: result,
+          error,
+          [TRANSACTION]: transaction.token
+        });
       }
     };
   }
@@ -85,7 +94,10 @@ export class WorkerWrapper {
       token,
     });
 
-    const payload = { type, id };
+    const payload = {
+      type,
+      id
+    };
     if (data && typeof data === "object") {
       Object.assign(payload, data);
     }
@@ -128,7 +140,10 @@ export class StreamBridge {
       },
       cancel: () => {
         this._streams.delete(streamId);
-        this._wrapper._worker.postMessage({ type: "stream-cancel", streamId });
+        this._wrapper._worker.postMessage({
+          type: "stream-cancel",
+          streamId
+        });
       },
     });
 
@@ -180,7 +195,12 @@ export class StreamBridge {
     };
   }
 
-  _onStreamMessage({ type, streamId, chunk, error }) {
+  _onStreamMessage({
+    type,
+    streamId,
+    chunk,
+    error
+  }) {
     const controller = this._streams.get(streamId);
     if (!controller) {
       return;
