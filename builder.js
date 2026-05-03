@@ -256,7 +256,7 @@ function buildNGrams(text, n = 3,type="normal") {
    `${glueShortPairs(text)} ${glueShortReverse(text)} ${glueShortPairs(glueFixes(fixText(text)))} ${glueShortReverse(glueFixes(fixText(text)))}`
    +` ${glueCommonPairs(text)} ${glueCommonReverse(text)} ${glueCommonPairs(glueFixes(fixText(text)))} ${glueCommonReverse(glueFixes(fixText(text)))}`
    +` ${gluePairs(text)} ${glueReverse(text)} ${text} ${gluePairs(glueFixes(fixText(text)))} ${glueReverse(glueFixes(fixText(text)))}`
- ) +` ${text}`)
+ ))
     .split(/\s+/)
     .filter((x) => x?.trim?.());
   log('buildNGrams: tokens length', tokens.length);
@@ -266,7 +266,7 @@ function buildNGrams(text, n = 3,type="normal") {
       .join(" ")
       .trim();
     const next = tokens[i + n - 1];
-    if(key === next) continue; // remove self loops which are common but not useful
+    if(key.toLowerCase() === String(next).toLowerCase()) continue; // remove self loops which are common but not useful
     model[key] ??= {};
     model[key][next] = (model[key][next] || 0) + 1;
     if (i % 50000 === 0 && i > 0) log('buildNGrams: progress', { i, tokensLength: tokens.length });
@@ -295,9 +295,7 @@ function buildPrunedNGrams(text, n = 3) {
       .join(" ")
       .trim();
     const next = tokens[i + n - 1];
-  //  if (["www.", ".com", "http"].some((x) => `${key} ${next}`.includes(x)))
-  //    continue;
-    if(key === next) continue; // remove self loops which are common but not useful 
+    if(key.toLowerCase() === String(next).toLowerCase()) continue; // remove self loops which are common but not useful 
     model[key] ??= {};
     model[key][next] = (model[key][next] || 0) + 1;
     if (i % 50000 === 0 && i > 0) log('buildPrunedNGrams: progress', { i });
@@ -326,9 +324,7 @@ function reverseBuildNGrams(text, n = 3) {
       .join(" ")
       .trim();
     const next = tokens[i + n - 1];
-    if (key === next) continue; // remove self loops which are common but not useful
-   // if (["www.", ".com", "http"].some((x) => `${key} ${next}`.includes(x)))
-   //   continue;
+    if(key.toLowerCase() === String(next).toLowerCase()) continue;// remove self loops which are common but not useful
     model[key] ??= {};
     model[key][next] = (model[key][next] || 0) + 1;
   }
@@ -349,9 +345,7 @@ function reverseBuildPrunedNGrams(text, n = 3) {
       .join(" ")
       .trim();
     const next = tokens[i + n - 1];
-   // if (["www.", ".com", "http"].some((x) => `${key} ${next}`.includes(x)))
-   //   continue;
-  if(key === next) continue; // remove self loops which are common but not useful
+  if(key.toLowerCase() === String(next).toLowerCase()) continue; // remove self loops which are common but not useful
     model[key] ??= {};
     model[key][next] = (model[key][next] || 0) + 1;
   }
@@ -633,13 +627,17 @@ if (typeof process) {
       let texts = (
         await Promise.all([
             //getText(await readFile("classified/eng.html")),
-          //  readFile("../mvlines.txt"),
-           // readFile("../mvlines.harper.txt"),
-           // readFile("../mvlines.strict.txt"),
+         // readFile("../mvlines.txt"),
+         // readFile("../mvlines.harper.txt"),
+         // readFile("../mvlines.strict.txt"),
           readFile("../tolkienizer/hobbit.txt"),
           readFile("../tolkienizer/fellowship.txt"),
           readFile("../tolkienizer/towers.txt"),
           readFile("../tolkienizer/king.txt"),
+          //readFile("../tolkienizer/hobbit-fren.txt"),
+         // readFile("../tolkienizer/fellowship-fren.txt"),
+          //readFile("../tolkienizer/towers-fren.txt"),
+         // readFile("../tolkienizer/king-fren.txt"),
           readFile("../tolkienizer/hobbit.strict.txt"),
           readFile("../tolkienizer/fellowship.strict.txt"),
           readFile("../tolkienizer/towers.strict.txt"),
