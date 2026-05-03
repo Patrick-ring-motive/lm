@@ -216,9 +216,9 @@ function buildNGrams(text, n = 3,type="normal") {
   log('buildNGrams: called', { len: text?.length, n });
   let tokens = norm(
     
-   // `${glueShortPairs(text)} ${glueShortReverse(text)} ${glueShortPairs(glueFixes(fixText(text)))} ${glueShortReverse(glueFixes(fixText(text)))}`
-  //  +` ${glueCommonPairs(text)} ${glueCommonReverse(text)} ${glueCommonPairs(glueFixes(fixText(text)))} ${glueCommonReverse(glueFixes(fixText(text)))}`)
-   ` ${gluePairs(text)} ${glueReverse(text)} ${text} ${gluePairs(glueFixes(fixText(text)))} ${glueReverse(glueFixes(fixText(text)))}`
+   `${glueShortPairs(text)} ${glueShortReverse(text)} ${glueShortPairs(glueFixes(fixText(text)))} ${glueShortReverse(glueFixes(fixText(text)))}`
+   +` ${glueCommonPairs(text)} ${glueCommonReverse(text)} ${glueCommonPairs(glueFixes(fixText(text)))} ${glueCommonReverse(glueFixes(fixText(text)))}`
+   +` ${gluePairs(text)} ${glueReverse(text)} ${text} ${gluePairs(glueFixes(fixText(text)))} ${glueReverse(glueFixes(fixText(text)))}`
  )
     .split(/\s+/)
     .filter((x) => x?.trim?.());
@@ -230,11 +230,16 @@ function buildNGrams(text, n = 3,type="normal") {
       .trim();
     const next = tokens[i + n - 1];
     if(key === next) continue; // remove self loops which are common but not useful
-   // if (["www.", ".com", "http"].some((x) => `${key} ${next}`.includes(x)))
-   //   continue;
     model[key] ??= {};
     model[key][next] = (model[key][next] || 0) + 1;
     if (i % 50000 === 0 && i > 0) log('buildNGrams: progress', { i, tokensLength: tokens.length });
+  }
+  for (const key in model) {
+    const modelKey = model[key];
+    const length = ?.length||0;
+    for(let i=0;i!==length;++i){
+      modelKey[i] = Math.ceil(modelKey[i]/13);
+    }
   }
   return model;
 }
@@ -327,7 +332,7 @@ const mergeModels = (...models) => {
     for (const key in m) {
       model[key] ??= {};
       for (const next in m[key]) {
-        model[key][next] = (model[key][next] || 0) + m[key][next];
+        model[key][next] = Math.max(model[key][next] || 0, m[key][next] || 0);
       }
     }
   }
