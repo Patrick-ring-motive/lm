@@ -2,6 +2,39 @@
 function log(...args) {
   console.log('[builder.js]', ...args);
 }
+
+/**
+ * Extracts the top 100 most frequent words from a string.
+ * @param {string} text - The input text to analyze.
+ * @param {string} locale - The BCP 47 language tag (default 'en').
+ * @returns {string[]} - Array of the top 100 words.
+ */
+function getTopWords(text, locale = 'en') {
+  if (!text) return [];
+
+  // 1. Initialize the Intl Segmenter
+  // 'granularity: word' allows us to iterate over word boundaries
+  const segmenter = new Intl.Segmenter(locale, { granularity: 'word' });
+  const segments = segmenter.segment(text);
+
+  const wordCounts = new Map();
+
+  // 2. Count frequencies
+  for (const { segment, isWordLike } of segments) {
+    // 'isWordLike' is crucial: it filters out spaces, punctuation, and symbols
+    if (isWordLike) {
+      const word = segment.toLowerCase();
+      wordCounts.set(word, (wordCounts.get(word) || 0) + 1);
+    }
+  }
+
+  // 3. Sort by frequency and take the top 100
+  return Array.from(wordCounts.entries())
+    .sort((a, b) => b[1] - a[1]) // Sort descending by count
+    .slice(0, 100)               // Limit to 100
+    .map(([word]) => word);      // Return only the words
+}
+
 (function initLogging(){
   log('builder.js started');
 })();
@@ -211,6 +244,10 @@ function buildSGrams(text) {
 }
 
 function buildNGrams(text, n = 3,type="normal") {
+  if(!words100.recalc){
+    words100 = new String(words100+'|'+getTopWords(text).join("|"));
+    words100.recalc = true;
+  }
   const model = {};
   text = fixText(text);
   log('buildNGrams: called', { len: text?.length, n });
