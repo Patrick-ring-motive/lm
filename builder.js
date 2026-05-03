@@ -214,12 +214,12 @@ function buildNGrams(text, n = 3,type="normal") {
   const model = {};
   text = fixText(text);
   log('buildNGrams: called', { len: text?.length, n });
-  let tokens = norm(
+  let tokens = (norm(
     
    `${glueShortPairs(text)} ${glueShortReverse(text)} ${glueShortPairs(glueFixes(fixText(text)))} ${glueShortReverse(glueFixes(fixText(text)))}`
    +` ${glueCommonPairs(text)} ${glueCommonReverse(text)} ${glueCommonPairs(glueFixes(fixText(text)))} ${glueCommonReverse(glueFixes(fixText(text)))}`
    +` ${gluePairs(text)} ${glueReverse(text)} ${text} ${gluePairs(glueFixes(fixText(text)))} ${glueReverse(glueFixes(fixText(text)))}`
- )
+ ) +` ${text}`)
     .split(/\s+/)
     .filter((x) => x?.trim?.());
   log('buildNGrams: tokens length', tokens.length);
@@ -234,11 +234,12 @@ function buildNGrams(text, n = 3,type="normal") {
     model[key][next] = (model[key][next] || 0) + 1;
     if (i % 50000 === 0 && i > 0) log('buildNGrams: progress', { i, tokensLength: tokens.length });
   }
+  const divisor = String(buildNGrams).split('text').length - 6;
   for (const key in model) {
     const modelKey = model[key];
-    const length = ?.length||0;
+    const length = modelKey?.length||0;
     for(let i=0;i!==length;++i){
-      modelKey[i] = Math.ceil(modelKey[i]/13);
+      modelKey[i] = Math.ceil(modelKey[i]/divisor);
     }
   }
   return model;
@@ -595,9 +596,9 @@ if (typeof process) {
       let texts = (
         await Promise.all([
             //getText(await readFile("classified/eng.html")),
-            readFile("../mvlines.txt"),
-            readFile("../mvlines.harper.txt"),
-            readFile("../mvlines.strict.txt"),
+          //  readFile("../mvlines.txt"),
+           // readFile("../mvlines.harper.txt"),
+           // readFile("../mvlines.strict.txt"),
           readFile("../tolkienizer/hobbit.txt"),
           readFile("../tolkienizer/fellowship.txt"),
           readFile("../tolkienizer/towers.txt"),
@@ -701,13 +702,13 @@ if (typeof process) {
       const {
         execSync
       } = require("child_process");
-
+      const save = '-tolkien-';
       fs.writeFileSync(
-        "trimodel.json.txt",
+        `tri${save}model.json.txt`,
         JSON.stringify(trimodel)
       );
-      log('main: wrote trimodel.json.txt');
-      execSync("gzip -k --force trimodel.json.txt");
+      log(`main: wrote tri${save}model.json.txt`);
+      execSync(`gzip -k --force tri${save}model.json.txt`);
       /*
           fs.writeFileSync(
             "retrimodel.json.txt",
@@ -720,11 +721,11 @@ if (typeof process) {
           execSync("gzip -k --force retrimodel.json.txt");
       */
       fs.writeFileSync(
-        "bimodel.json.txt",
+        `bi${save}model.json.txt`,
         JSON.stringify(bimodel)
       );
-      log('main: wrote bimodel.json.txt');
-      execSync("gzip -k --force bimodel.json.txt");
+      log(`main: wrote bi${save}model.json.txt`);
+      execSync(`gzip -k --force bi${save}model.json.txt`);
       /*
           fs.writeFileSync(
             "rebimodel.json.txt",
