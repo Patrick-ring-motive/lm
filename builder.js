@@ -2,9 +2,6 @@
 function log(...args) {
   console.log('[builder.js]', ...args);
 }
-
-// Keep only the top N continuations for every context key.
-// Mutates model in place and also returns it.
 function pruneTopScores(model, topN = 5) {
   for (const key in model) {
     const nextMap = model[key];
@@ -25,7 +22,6 @@ function pruneTopScores(model, topN = 5) {
 
   return model;
 }
-
 /**
  * Extracts the top 100 most frequent words from a string.
  * @param {string} text - The input text to analyze.
@@ -735,10 +731,10 @@ if (typeof process) {
 
       let allBimodels = allTexts.map(text => buildNGrams(text, 2)).concat(allTexts.map(text => buildPrunedNGrams(text, 2)));
 
-      let trimodel = mergeModels(...allTrimodels);
+      let trimodel = pruneTopScores(mergeModels(...allTrimodels));
       log('main: trimodel built', { keys: Object.keys(trimodel).length });
       // trimodel = Object.fromEntries(Object.entries(trimodel).sort());
-      let bimodel = mergeModels(...allBimodels);
+      let bimodel = pruneTopScores(mergeModels(...allBimodels));
       log('main: bimodel built', { keys: Object.keys(bimodel).length });
       // bimodel = Object.fromEntries(Object.entries(bimodel).sort());
 
