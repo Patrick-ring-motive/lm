@@ -3,6 +3,29 @@ function log(...args) {
   console.log('[builder.js]', ...args);
 }
 
+// Keep only the top N continuations for every context key.
+// Mutates model in place and also returns it.
+function pruneTopScores(model, topN = 5) {
+  for (const key in model) {
+    const nextMap = model[key];
+    const entries = Object.entries(nextMap);
+
+    if (entries.length <= topN) continue;
+
+    entries.sort((a, b) => b[1] - a[1]); // highest score first
+
+    const trimmed = {};
+    for (let i = 0; i < topN; i++) {
+      const [token, score] = entries[i];
+      trimmed[token] = score;
+    }
+
+    model[key] = trimmed;
+  }
+
+  return model;
+}
+
 /**
  * Extracts the top 100 most frequent words from a string.
  * @param {string} text - The input text to analyze.
