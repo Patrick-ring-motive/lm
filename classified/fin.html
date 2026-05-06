@@ -1,18 +1,33 @@
 <!DOCTYPE html>
 <html lang="fin">
+
 <head>
   <meta charset="utf-8">
   <title>Language: fin</title>
   <style>
-    table { border-collapse: collapse; width: 100%; }
-    td    { border: 1px solid #ccc; padding: 6px 10px; }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    td {
+      border: 1px solid #ccc;
+      padding: 6px 10px;
+    }
+
   </style>
 </head>
+
 <body>
   <h1>fin — 2 cell(s)</h1>
   <table>
-    <tr><td>&lt;s&gt;[INST] Miksi vain Alko saa myydä vahvoja alkoholeja? [/INST] Alkon monopoli on osa Suomen alkoholipolitiikkaa, jolla pyritään välttämään alkoholin haittavaikutuksia. Alkoholimonopolilla on useita eri tarkoituksia: se ehkäisee yksityisten yritysten voittoa maksimoivaa toimintaa ja kerää valtiolle varoja alkoholin haittavaikutusten torjumiseksi. &lt;/s&gt;\\n&lt;s&gt;[INST] Minkälaisia keinoja valtiolla on torjua alkoholin haittavaikutuksia? [/INST] Valtio torjuu alkoholin haittavaikutuksia useilla eri keinoilla:\n\n1. Korkealla alkoholiverolla\n2. Sääntelemällä alkoholin mainontaa\n3. Rajoittamalla alkoholin myyntiaikoja sekä -alueita\n4. Alkon vähittäismyyntimonopolilla\n5. Ehkäisevällä päihdetyöllä\n6. Tehostamalla ja kehittämällä terveydenhoitoa\n\nEhkäisevään päihdetyöhön kuuluvat mm.:\n\n1. Alkoholin käytön seuraaminen ja tilastoiminen\n2. Alkoholin haitoista tiedottaminen ja valistaminen\n3. Alkoholin ongelmakäytön tunnistaminen ja hoitaminen\n4. Matalan kynnyksen palvelut ongelmakäyttäjille\n5. Vertaistukiryhmät &lt;/s&gt;</td></tr>
-    <tr><td>&lt;s&gt;[INST] Kirjoita minulle C-ohjelma, joka laskee ja tulostaa fibbonachin luvut yhdestä kymmeneen. [/INST] Tässä on C-ohjelma, joka laskee Fibbonaccin luvut yhdestä kymmeneen:\n```c\n#include &lt;stdio.h&gt;\n\n\n// Fibbonaccin lukujono kohdalla n ( F(n) ) lasketaan seuraavasti\n// F(n) = F(n-1) + F(n-2)\n// Lukujonolla on kuitenkin kaksi ennalta määriteltyä pistettä, 0 ja 1.\n// F(1) = 1\n// F(0) = 0\nint fib(unsigned int n){\n\n    if(n &lt;= 1)\n        return n;\n\n    return fib(n-1) + fib(n-2);\n\n}\n\nint main(){\n\n    // Toisto yhdestä kymmeneen\n    for(int i = 1; i&lt;=10; i++){\n\n        // Tulosta F(n)\n        printf(&quot;%i&quot;,fib(i));\n\n    }\n\n    return 0;\n\n}\n``` &lt;/s&gt;\\n&lt;s&gt;[INST] En ymmärrä mitä sana &quot;unsigned&quot; tekee ensimmäisen funktion alussa. Selitä minulle. [/INST] Sana &quot;unsigned&quot; tarkoittaa suomeksi &quot;etumerkitöntä&quot;. C-kielessä  kokonaislukutyyppiset muuttujat kuten ensimmäisen funktion alussa esiintyvä `int n` voidaan rajata saamaan vain positiivisia lukuarvoja (sisältäen myös arvon 0) merkitsemällä nämä määreellä `unsigned`.\n\nWikipedian C-kielen muuttujien tyyppejä käsittelevän artikkelin (https://en.wikipedia.org/wiki/C_data_types) mukaan `int` ja `unsigned int` tyypit voivat saada arvoja ainakin seuraavilta väleiltä:\n\n* `int`: [−32,767, +32,767]\n* `unsigned int`: [0, 65,535]\n\nKäytännössä arvoalue on toteutuskohtainen, mutta ei kuitenkaan tätä pienempi. &lt;/s&gt;</td></tr>
+    <tr>
+      <td>&lt;s&gt;[INST] Miksi vain Alko saa myydä vahvoja alkoholeja? [/INST] Alkon monopoli on osa Suomen alkoholipolitiikkaa, jolla pyritään välttämään alkoholin haittavaikutuksia. Alkoholimonopolilla on useita eri tarkoituksia: se ehkäisee yksityisten yritysten voittoa maksimoivaa toimintaa ja kerää valtiolle varoja alkoholin haittavaikutusten torjumiseksi. &lt;/s&gt;\\n&lt;s&gt;[INST] Minkälaisia keinoja valtiolla on torjua alkoholin haittavaikutuksia? [/INST] Valtio torjuu alkoholin haittavaikutuksia useilla eri keinoilla:\n\n1. Korkealla alkoholiverolla\n2. Sääntelemällä alkoholin mainontaa\n3. Rajoittamalla alkoholin myyntiaikoja sekä -alueita\n4. Alkon vähittäismyyntimonopolilla\n5. Ehkäisevällä päihdetyöllä\n6. Tehostamalla ja kehittämällä terveydenhoitoa\n\nEhkäisevään päihdetyöhön kuuluvat mm.:\n\n1. Alkoholin käytön seuraaminen ja tilastoiminen\n2. Alkoholin haitoista tiedottaminen ja valistaminen\n3. Alkoholin ongelmakäytön tunnistaminen ja hoitaminen\n4. Matalan kynnyksen palvelut ongelmakäyttäjille\n5. Vertaistukiryhmät &lt;/s&gt;</td>
+    </tr>
+    <tr>
+      <td>&lt;s&gt;[INST] Kirjoita minulle C-ohjelma, joka laskee ja tulostaa fibbonachin luvut yhdestä kymmeneen. [/INST] Tässä on C-ohjelma, joka laskee Fibbonaccin luvut yhdestä kymmeneen:\n```c\n#include &lt;stdio.h&gt;\n\n\n// Fibbonaccin lukujono kohdalla n ( F(n) ) lasketaan seuraavasti\n// F(n) = F(n-1) + F(n-2)\n// Lukujonolla on kuitenkin kaksi ennalta määriteltyä pistettä, 0 ja 1.\n// F(1) = 1\n// F(0) = 0\nint fib(unsigned int n){\n\n if(n &lt;= 1)\n return n;\n\n return fib(n-1) + fib(n-2);\n\n}\n\nint main(){\n\n // Toisto yhdestä kymmeneen\n for(int i = 1; i&lt;=10; i++){\n\n // Tulosta F(n)\n printf(&quot;%i&quot;,fib(i));\n\n }\n\n return 0;\n\n}\n``` &lt;/s&gt;\\n&lt;s&gt;[INST] En ymmärrä mitä sana &quot;unsigned&quot; tekee ensimmäisen funktion alussa. Selitä minulle. [/INST] Sana &quot;unsigned&quot; tarkoittaa suomeksi &quot;etumerkitöntä&quot;. C-kielessä kokonaislukutyyppiset muuttujat kuten ensimmäisen funktion alussa esiintyvä `int n` voidaan rajata saamaan vain positiivisia lukuarvoja (sisältäen myös arvon 0) merkitsemällä nämä määreellä `unsigned`.\n\nWikipedian C-kielen muuttujien tyyppejä käsittelevän artikkelin (https://en.wikipedia.org/wiki/C_data_types) mukaan `int` ja `unsigned int` tyypit voivat saada arvoja ainakin seuraavilta väleiltä:\n\n* `int`: [−32,767, +32,767]\n* `unsigned int`: [0, 65,535]\n\nKäytännössä arvoalue on toteutuskohtainen, mutta ei kuitenkaan tätä pienempi. &lt;/s&gt;</td>
+    </tr>
   </table>
 </body>
+
 </html>
