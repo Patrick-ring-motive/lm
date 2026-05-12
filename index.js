@@ -1,4 +1,6 @@
-import { StreamBridge } from "./worker-client.js";
+import {
+  StreamBridge
+} from "./worker-client.js";
 
 const STORAGE_KEYS = {
   history: "lm-chat-history-v1",
@@ -139,7 +141,10 @@ async function generateReply() {
 
   try {
     while (true) {
-      const { done, value } = await reader.read();
+      const {
+        done,
+        value
+      } = await reader.read();
       if (done) {
         break;
       }
@@ -168,7 +173,10 @@ async function generateReply() {
 
   const finalText = fullText.trim() || "(No output generated.)";
   assistantBody.textContent = finalText;
-  state.history.push({ role: "assistant", text: finalText });
+  state.history.push({
+    role: "assistant",
+    text: finalText
+  });
   persistState();
 }
 
@@ -198,7 +206,10 @@ async function handleSend() {
   const userText = input;
   messageInput.value = "";
   renderMessage("user", userText);
-  state.history.push({ role: "user", text: userText });
+  state.history.push({
+    role: "user",
+    text: userText
+  });
   state.context.push(...tokenize(userText));
   trimContext();
   persistState();
@@ -321,7 +332,7 @@ async function init() {
     await initWorker();
     refreshMeta();
   } catch (error) {
-    setStatus("Failed to load models "+`Error: ${error?.message ?? String(error)}`, "error");
+    setStatus("Failed to load models " + `Error: ${error?.message ?? String(error)}`, "error");
     renderMessage("system", `Error: ${error?.message ?? String(error)}`);
   }
 }
