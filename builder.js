@@ -135,10 +135,10 @@ async function processInBatches(lines, batchSize = 500) {
     return results.join('\n');
 }
 
-let words100 = "years|ways|worlds|live|lives|hands|parts|children|eyes|places|weeks|cases|points|numbers|groups|problems|facts|times|days|men|women|one|two|three|four|five|six|seven|eight|nine|ten|zero|none|size|sized|sizes|sizing|calls|called|calling|leaves|lefts|leaving|try|tries|trying|feels|felt|feeling|seems|seemed|seeming|asks|asked|asking|tells|told|telling|finds|found|finding|looks|looked|looking|see|sees|seeing|saw|knows|knowing|knew|get|gets|got|getting|works|worked|working|I|a|able|about|after|all|also|am|an|and|any|are|as|ask|at|back|bad|be|because|been|being|bes|big|but|by|call|came|can|case|child|come|comes|coming|company|could|day|different|do|does|doing|done|early|even|eye|fact|feel|few|find|first|for|from|gave|get|give|gives|giving|go|goes|going|good|government|great|group|had|hand|has|have|he|her|high|him|his|how|if|important|in|into|is|it|its|just|know|large|last|leave|life|like|little|long|look|make|makes|making|man|me|most|my|new|next|no|not|now|number|of|old|on|one|only|or|other|our|out|over|own|part|people|person|place|point|problem|public|right|said|same|saw|say|says|see|seeing|seem|sees|shall|she|should|small|so|some|take|takes|taking|tell|than|that|the|their|them|then|there|these|they|thing|think|thinking|thinks|this|thought|time|to|took|try|two|up|us|use|used|uses|using|want|wanted|wanting|wants|was|way|we|week|well|went|were|what|when|which|who|will|with|woman|work|world|would|year|yes|yet|you|young|your";
+let words100 = "1|2|3|4|5|6|7|8|9|10|0|years|ways|worlds|live|lives|hands|parts|children|eyes|places|weeks|cases|points|numbers|groups|problems|facts|times|days|men|women|one|two|three|four|five|six|seven|eight|nine|ten|zero|none|size|sized|sizes|sizing|calls|called|calling|leaves|lefts|leaving|try|tries|trying|feels|felt|feeling|seems|seemed|seeming|asks|asked|asking|tells|told|telling|finds|found|finding|looks|looked|looking|see|sees|seeing|saw|knows|knowing|knew|get|gets|got|getting|works|worked|working|I|a|able|about|after|all|also|am|an|and|any|are|as|ask|at|back|bad|be|because|been|being|bes|big|but|by|call|came|can|case|child|come|comes|coming|company|could|day|different|do|does|doing|done|early|even|eye|fact|feel|few|find|first|for|from|gave|get|give|gives|giving|go|goes|going|good|government|great|group|had|hand|has|have|he|her|high|him|his|how|if|important|in|into|is|it|its|just|know|large|last|leave|life|like|little|long|look|make|makes|making|man|me|most|my|new|next|no|not|now|number|of|old|on|one|only|or|other|our|out|over|own|part|people|person|place|point|problem|public|right|said|same|saw|say|says|see|seeing|seem|sees|shall|she|should|small|so|some|take|takes|taking|tell|than|that|the|their|them|then|there|these|they|thing|think|thinking|thinks|this|thought|time|to|took|try|two|up|us|use|used|uses|using|want|wanted|wanting|wants|was|way|we|week|well|went|were|what|when|which|who|will|with|woman|work|world|would|year|yes|yet|you|young|your";
 words100 = words100
   .split("|")
-  .filter((x) => x.length <= 5)
+ // .filter((x) => x.length <= 5)
   .join("|");
 const norm = (str) => {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -155,7 +155,7 @@ const glueFixes = (text) => {
 // run **before** you split into tokens
 const glueCommonPairs = (text) => {
   log('glueCommonPairs: called', { len: text?.length });
-  const re = RegExp(`\\b(${words100})\\s+(${words100})\\b`, "g");
+  const re = RegExp(`\\s(${words100})\\s+(${words100})\\s`, "g");
   let next = text,
     prev;
   let iterations = 0;
@@ -171,7 +171,7 @@ const glueCommonPairs = (text) => {
 const glueCommonReverse = (text) => {
   log('glueCommonReverse: called', { len: text?.length });
   text = [...text].reverse().join("");
-  const re = RegExp(`\\b(${[...words100].reverse().join("")})\\s+(${[...words100].reverse().join("")})\\b`, "g");
+  const re = RegExp(`\\s(${[...words100].reverse().join("")})\\s+(${[...words100].reverse().join("")})\\s`, "g");
   let next = text,
     prev;
   let iterations = 0;
@@ -186,7 +186,7 @@ const glueCommonReverse = (text) => {
 
 const glueShortPairs = (text) => {
   log('glueShortPairs: called', { len: text?.length });
-  const re = /\b([a-z]{1,3})\s+([a-z]{1,3})\b/g;
+  const re = /\s([a-z]{1,3})\s+([a-z]{1,3})\s/g;
   let next = text,
     prev;
   let iterations = 0;
@@ -201,7 +201,7 @@ const glueShortPairs = (text) => {
 const words = words100 + "|[a-z]{1,3}";
 const gluePairs = (text) => {
   log('gluePairs: called', { len: text?.length });
-  const re = RegExp(`\\b(${words})\\s+(${words})\\b`, "g");
+  const re = RegExp(`\\s(${words})\\s+(${words})\\s`, "g");
   let next = text,
     prev;
   let iterations = 0;
@@ -218,7 +218,7 @@ const revWords = [...words100].reverse().join("") + "|[a-z]{1,3}";
 const glueReverse = (text) => {
   log('glueReverse: called', { len: text?.length });
   text = [...text].reverse().join("");
-  const re = RegExp(`\\b(${words})\\s+(${words})\\b`, "g");
+  const re = RegExp(`\\s(${words})\\s+(${words})\\s`, "g");
   let next = text,
     prev;
   let iterations = 0;
@@ -246,7 +246,7 @@ const fixText = (text) => {
     .replace(/(\s*\.)+/g, ".")
     .replace(/(\s*\?)+/g, "?")
     .replace(/(\s*\!)+/g, "!")
-    .replace(/(\s*\,)+/g, ",")
+    .replace(/(\s*x\,)+/g, ",")
     .replace(/\s+\./g, '.')
     .replace(/\s+,/g, ',')
     .replace(/[A-Z]{2,}/g, (x) => x[0] + x.slice(1).toLowerCase()));
@@ -275,6 +275,7 @@ function buildNGrams(text, n = 3,type="normal") {
    `${glueShortPairs(text)} ${glueShortReverse(text)} ${glueShortPairs(glueFixes(fixText(text)))} ${glueShortReverse(glueFixes(fixText(text)))}`
    +` ${glueCommonPairs(text)} ${glueCommonReverse(text)} ${glueCommonPairs(glueFixes(fixText(text)))} ${glueCommonReverse(glueFixes(fixText(text)))}`
    +` ${gluePairs(text)} ${glueReverse(text)} ${text} ${gluePairs(glueFixes(fixText(text)))} ${glueReverse(glueFixes(fixText(text)))}`
+   + ` ${gluePairs(gluePairs(glueFixes(fixText(text))))} ${gluePairs(gluePairs(gluePairs(glueFixes(fixText(text)))))}`
  ))
     .split(/\s+/)
     .filter((x) => x?.trim?.());
@@ -649,21 +650,27 @@ if (typeof process) {
          // readFile("../mvlines.txt"),
          // readFile("../mvlines.harper.txt"),
          // readFile("../mvlines.strict.txt"),
-          readFile("../tolkienizer/hobbit.txt"),
-          readFile("../tolkienizer/fellowship.txt"),
-          readFile("../tolkienizer/towers.txt"),
-          readFile("../tolkienizer/king.txt"),
+         // readFile("../tolkienizer/hobbit.txt"),
+        //  readFile("../tolkienizer/fellowship.txt"),
+         // readFile("../tolkienizer/towers.txt"),
+         // readFile("../tolkienizer/king.txt"),
           //readFile("../tolkienizer/hobbit-fren.txt"),
          // readFile("../tolkienizer/fellowship-fren.txt"),
           //readFile("../tolkienizer/towers-fren.txt"),
          // readFile("../tolkienizer/king-fren.txt"),
-          readFile("../tolkienizer/hobbit.strict.txt"),
-          readFile("../tolkienizer/fellowship.strict.txt"),
-          readFile("../tolkienizer/towers.strict.txt"),
-          readFile("../tolkienizer/king.strict.txt"),
+        // readFile("./harry1.txt"),
+          readFile("./thinking.txt"),
+                readFile("./thinking.strict.txt"),
+                 readFile("./waking.txt"),
+                readFile("./waking.strict.txt"),
+
+        //  readFile("../tolkienizer/fellowship.strict.txt"),
+        //  readFile("../tolkienizer/towers.strict.txt"),
+         // readFile("../tolkienizer/king.strict.txt"),
          // readFile("fellowship.txt"),
           //  readFile("fellowship-lan.txt"),
           //  readFile("fellowship-fren.txt"),
+          
          // readFile("towers.txt"),
           //    readFile("towers-lan.txt"),
           //   readFile("towers-fren.txt"),
@@ -719,7 +726,8 @@ if (typeof process) {
         .replace(/\s+\./g, ".")
         .replace(/\s+\!/g, "!")
         .replace(/\s+\?/g, "?")
-        .replaceAll('¬', '').replaceAll('�',"'"));
+        .replaceAll('¬', '').replaceAll('�',"'")
+        .replace(/[\(\)"”“:\[\]_'̶]/g," "));
 
       log('main: file reads complete', { files: texts.length });
 
@@ -731,10 +739,10 @@ if (typeof process) {
 
       let allBimodels = allTexts.map(text => buildNGrams(text, 2)).concat(allTexts.map(text => buildPrunedNGrams(text, 2)));
 
-      let trimodel = pruneTopScores(mergeModels(...allTrimodels));
+      let trimodel = (mergeModels(...allTrimodels));
       log('main: trimodel built', { keys: Object.keys(trimodel).length });
       // trimodel = Object.fromEntries(Object.entries(trimodel).sort());
-      let bimodel = pruneTopScores(mergeModels(...allBimodels));
+      let bimodel = (mergeModels(...allBimodels));
       log('main: bimodel built', { keys: Object.keys(bimodel).length });
       // bimodel = Object.fromEntries(Object.entries(bimodel).sort());
 
@@ -756,7 +764,7 @@ if (typeof process) {
       const {
         execSync
       } = require("child_process");
-      const save = '-tolkien-';
+      const save = '-thinking-';
       fs.writeFileSync(
         `tri${save}model.json.txt`,
         JSON.stringify(trimodel)
