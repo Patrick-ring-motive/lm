@@ -3,12 +3,12 @@
 // the Wix backend, and re-streams tokens as real SSE.
 
 const WIX_BACKEND = "https://patrickring9.wixstudio.com/http/_functions";
-const MODEL_ID    = "lm-ngram";
+const MODEL_ID = "lm-ngram";
 
 // ── HTTP helpers ────────────────────────────────────────────────────
 
 const CORS = {
-  "Access-Control-Allow-Origin":  "*",
+  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
@@ -16,7 +16,10 @@ const CORS = {
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json", ...CORS },
+    headers: {
+      "Content-Type": "application/json",
+      ...CORS
+    },
   });
 }
 
@@ -31,11 +34,16 @@ async function handleCompletion(request, ctx) {
   const wantStream = body.stream !== false;
 
   // Always ask Wix for a non-streaming response (includes _deltas).
-  const wixPayload = { ...body, stream: false };
+  const wixPayload = {
+    ...body,
+    stream: false
+  };
 
   const wixRes = await fetch(`${WIX_BACKEND}/v1ChatCompletions`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json"
+    },
     body: JSON.stringify(wixPayload),
   });
 
@@ -43,7 +51,10 @@ async function handleCompletion(request, ctx) {
     const errText = await wixRes.text();
     return new Response(errText, {
       status: wixRes.status,
-      headers: { "Content-Type": "application/json", ...CORS },
+      headers: {
+        "Content-Type": "application/json",
+        ...CORS
+      },
     });
   }
 
@@ -51,21 +62,27 @@ async function handleCompletion(request, ctx) {
 
   // ── Non-streaming pass-through ──────────────────────────────────
   if (!wantStream) {
-    const { _deltas, ...clean } = result;
+    const {
+      _deltas,
+      ...clean
+    } = result;
     return json(clean);
   }
 
   // ── Streaming (SSE) ─────────────────────────────────────────────
-  const { readable, writable } = new TransformStream();
-  const writer  = writable.getWriter();
+  const {
+    readable,
+    writable
+  } = new TransformStream();
+  const writer = writable.getWriter();
   const encoder = new TextEncoder();
-  const write   = (text) => writer.write(encoder.encode(text));
+  const write = (text) => writer.write(encoder.encode(text));
 
-  const deltas       = result._deltas ?? [];
+  const deltas = result._deltas ?? [];
   const completionId = result.id;
-  const created      = result.created;
+  const created = result.created;
   const finishReason = result.choices?.[0]?.finish_reason ?? "stop";
-  const usage        = result.usage;
+  const usage = result.usage;
 
   const generatePromise = (async () => {
     try {
@@ -75,7 +92,14 @@ async function handleCompletion(request, ctx) {
         object: "chat.completion.chunk",
         created,
         model: MODEL_ID,
-        choices: [{ index: 0, delta: { role: "assistant", content: "" }, finish_reason: null }],
+        choices: [{
+          index: 0,
+          delta: {
+            role: "assistant",
+            content: ""
+          },
+          finish_reason: null
+        }],
       }));
 
       // Stream each token delta with a small pause for perceived typing
@@ -88,7 +112,13 @@ async function handleCompletion(request, ctx) {
           object: "chat.completion.chunk",
           created,
           model: MODEL_ID,
-          choices: [{ index: 0, delta: { content }, finish_reason: null }],
+          choices: [{
+            index: 0,
+            delta: {
+              content
+            },
+            finish_reason: null
+          }],
         }));
 
         // Tiny yield so the runtime flushes each event
@@ -101,7 +131,11 @@ async function handleCompletion(request, ctx) {
         object: "chat.completion.chunk",
         created,
         model: MODEL_ID,
-        choices: [{ index: 0, delta: {}, finish_reason: finishReason }],
+        choices: [{
+          index: 0,
+          delta: {},
+          finish_reason: finishReason
+        }],
         usage,
       }));
 
@@ -110,9 +144,13 @@ async function handleCompletion(request, ctx) {
     } catch (err) {
       try {
         await write(sseEvent({
-          error: { message: err?.message ?? String(err), type: "server_error" },
+          error: {
+            message: err?.message ?? String(err),
+            type: "server_error"
+          },
         }));
-      } catch { /* writer closed */ }
+      } catch {
+        /* writer closed */ }
       await writer.close().catch(() => {});
     }
   })();
@@ -121,9 +159,9 @@ async function handleCompletion(request, ctx) {
 
   return new Response(readable, {
     headers: {
-      "Content-Type":  "text/event-stream",
+      "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
-      Connection:      "keep-alive",
+      Connection: "keep-alive",
       ...CORS,
     },
   });
@@ -136,13 +174,21 @@ export default {
     const url = new URL(request.url);
 
     if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: CORS });
+      return new Response(null, {
+        status: 204,
+        headers: CORS
+      });
     }
 
     if (url.pathname === "/v1/models" && request.method === "GET") {
       return json({
         object: "list",
-        data: [{ id: MODEL_ID, object: "model", created: 1700000000, owned_by: "local" }],
+        data: [{
+          id: MODEL_ID,
+          object: "model",
+          created: 1700000000,
+          owned_by: "local"
+        }],
       });
     }
 
@@ -151,9 +197,18 @@ export default {
     }
 
     if (url.pathname === "/" || url.pathname === "/health") {
-      return json({ status: "ok", model: MODEL_ID, backend: "wix-proxy" });
+      return json({
+        status: "ok",
+        model: MODEL_ID,
+        backend: "wix-proxy"
+      });
     }
 
-    return json({ error: { message: "Not found", type: "invalid_request_error" } }, 404);
+    return json({
+      error: {
+        message: "Not found",
+        type: "invalid_request_error"
+      }
+    }, 404);
   },
 };
