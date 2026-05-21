@@ -249,7 +249,8 @@ function loadModels() {
 try {
   global.loadModles = loadModels();
 } catch {
-  /* will retry on first request */ }
+  /* will retry on first request */
+}
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
