@@ -150,7 +150,8 @@ async function handleCompletion(request, ctx) {
           },
         }));
       } catch {
-        /* writer closed */ }
+        /* writer closed */
+      }
       await writer.close().catch(() => {});
     }
   })();
