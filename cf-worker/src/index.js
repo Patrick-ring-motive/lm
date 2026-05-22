@@ -2,7 +2,9 @@
 // Exposes an OpenAI-compatible /v1/chat/completions streaming endpoint
 // backed by a local n-gram language model.
 
-import { loadModels } from "./models.js";
+import {
+  loadModels
+} from "./models.js";
 import {
   getNextToken,
   tokensToText,
@@ -24,7 +26,10 @@ const CORS_HEADERS = {
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    headers: {
+      "Content-Type": "application/json",
+      ...CORS_HEADERS
+    },
   });
 }
 
@@ -92,13 +97,14 @@ async function streamCompletion(request, env) {
       object: "chat.completion",
       created,
       model: MODEL_ID,
-      choices: [
-        {
-          index: 0,
-          message: { role: "assistant", content: text },
-          finish_reason: generated.length >= maxTokens ? "length" : "stop",
+      choices: [{
+        index: 0,
+        message: {
+          role: "assistant",
+          content: text
         },
-      ],
+        finish_reason: generated.length >= maxTokens ? "length" : "stop",
+      }, ],
       usage: {
         prompt_tokens: context.length,
         completion_tokens: generated.length,
@@ -108,7 +114,10 @@ async function streamCompletion(request, env) {
   }
 
   // ── Streaming (SSE) path ────────────────────────────────────────
-  const { readable, writable } = new TransformStream();
+  const {
+    readable,
+    writable
+  } = new TransformStream();
   const writer = writable.getWriter();
   const encoder = new TextEncoder();
 
@@ -122,7 +131,14 @@ async function streamCompletion(request, env) {
         object: "chat.completion.chunk",
         created,
         model: MODEL_ID,
-        choices: [{ index: 0, delta: { role: "assistant", content: "" }, finish_reason: null }],
+        choices: [{
+          index: 0,
+          delta: {
+            role: "assistant",
+            content: ""
+          },
+          finish_reason: null
+        }],
       }),
     );
 
@@ -147,7 +163,13 @@ async function streamCompletion(request, env) {
           object: "chat.completion.chunk",
           created,
           model: MODEL_ID,
-          choices: [{ index: 0, delta: { content: contentDelta }, finish_reason: null }],
+          choices: [{
+            index: 0,
+            delta: {
+              content: contentDelta
+            },
+            finish_reason: null
+          }],
         }),
       );
 
@@ -168,7 +190,11 @@ async function streamCompletion(request, env) {
         object: "chat.completion.chunk",
         created,
         model: MODEL_ID,
-        choices: [{ index: 0, delta: {}, finish_reason: finishReason }],
+        choices: [{
+          index: 0,
+          delta: {},
+          finish_reason: finishReason
+        }],
         usage: {
           prompt_tokens: context.length,
           completion_tokens: generated.length,
@@ -187,7 +213,10 @@ async function streamCompletion(request, env) {
     try {
       await write(
         sseEvent({
-          error: { message: err?.message ?? String(err), type: "server_error" },
+          error: {
+            message: err?.message ?? String(err),
+            type: "server_error"
+          },
         }),
       );
     } catch {
@@ -219,21 +248,22 @@ export default {
 
     // CORS preflight
     if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: CORS_HEADERS });
+      return new Response(null, {
+        status: 204,
+        headers: CORS_HEADERS
+      });
     }
 
     // /v1/models — list available models (OpenAI compat)
     if (url.pathname === "/v1/models" && request.method === "GET") {
       return json({
         object: "list",
-        data: [
-          {
-            id: MODEL_ID,
-            object: "model",
-            created: 1700000000,
-            owned_by: "local",
-          },
-        ],
+        data: [{
+          id: MODEL_ID,
+          object: "model",
+          created: 1700000000,
+          owned_by: "local",
+        }, ],
       });
     }
 
@@ -246,9 +276,17 @@ export default {
 
     // Health check
     if (url.pathname === "/" || url.pathname === "/health") {
-      return json({ status: "ok", model: MODEL_ID });
+      return json({
+        status: "ok",
+        model: MODEL_ID
+      });
     }
 
-    return json({ error: { message: "Not found", type: "invalid_request_error" } }, 404);
+    return json({
+      error: {
+        message: "Not found",
+        type: "invalid_request_error"
+      }
+    }, 404);
   },
 };
