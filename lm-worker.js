@@ -315,8 +315,8 @@ async function loadModel(stem) {
 
 async function initializeModels() {
   const [trimodel, bimodel] = await Promise.all([
-    loadModel("trimodel.json.txt"),
-    loadModel("bimodel.json.txt"),
+    loadModel("tri-tolkien-model.json.txt"),
+    loadModel("bi-tolkien-model.json.txt"),
   ]);
   const nlpLcs = await importScript('https://patrick-ring-motive.github.io/nlp-lcs/index.js');
   self.word = nlpLcs.word;
